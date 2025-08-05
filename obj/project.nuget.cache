@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "fBdzwW/vqQg=",
+  "success": true,
+  "projectFilePath": "/mnt/Work/srcs/serv/bardie/kithara/Kithara.csproj",
+  "expectedPackageFiles": [
+    "/home/marmex/.nuget/packages/microsoft.dotnet.ilcompiler/9.0.7/microsoft.dotnet.ilcompiler.9.0.7.nupkg.sha512",
+    "/home/marmex/.nuget/packages/microsoft.net.illink.tasks/9.0.7/microsoft.net.illink.tasks.9.0.7.nupkg.sha512",
+    "/home/marmex/.nuget/packages/microsoft.aspnetcore.app.ref/9.0.7/microsoft.aspnetcore.app.ref.9.0.7.nupkg.sha512",
+    "/home/marmex/.nuget/packages/runtime.linux-x64.microsoft.dotnet.ilcompiler/9.0.7/runtime.linux-x64.microsoft.dotnet.ilcompiler.9.0.7.nupkg.sha512"
+  ],
+  "logs": []
+}
