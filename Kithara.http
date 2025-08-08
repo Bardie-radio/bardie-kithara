@@ -1,11 +1,41 @@
-@Kithara_HostAddress = http://localhost:5133
-
-GET {{Kithara_HostAddress}}/todos/
+GET {{HostAddress}}/{{String}}/
 Accept: application/json
+Authorization: Bearer {{Token}}
 
 ###
 
-GET {{Kithara_HostAddress}}/todos/1
+GET {{HostAddress}}/{{String}}/test 
 Accept: application/json
+Authorization: Bearer {{Token}}
+
+###
+
+POST {{HostAddress}}/{{String}}/test 
+Accept: application/json
+Authorization: Bearer {{Token}}
+
+###
+GET {{HostAddress}}/playlists/
+Accept: application/json
+Authorization: Bearer {{Token}}
+
+###
+
+GET {{HostAddress}}/playlists/{{Playlist}}
+Accept: application/json
+Authorization: Bearer {{Token}}
+
+###
+
+POST {{HostAddress}}/playlists/{{Playlist}}
+Accept: application/json
+Authorization: Bearer {{Token}}
+
+###
+
+POST {{HostAddress}}/playlists/{{Playlist}}/upload
+Content-Type: multipart/form-data
+Accept: application/json
+Authorization: Bearer {{Token}}
 
 ###

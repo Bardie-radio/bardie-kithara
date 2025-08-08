@@ -1,7 +1,7 @@
 /// <summary>
 /// Represents a model for a audio file in the radio service.
 /// </summary>
-internal class Tune
+public class Tune
 {
     /// <summary>
     /// Gets or sets the unique identifier for the audio file.

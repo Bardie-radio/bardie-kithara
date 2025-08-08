@@ -1,5 +1,5 @@
 
-internal class Playlist
+public class Playlist
 {
     /// <summary>
     /// Gets or sets the unique identifier for the playlist.

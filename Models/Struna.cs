@@ -1,7 +1,10 @@
 /// <summary>
 /// Represent model for audio stream of the radio service.
 /// </summary>
-internal class Struna
+/// <remarks>
+/// Named after ukrainian word for "string".
+/// </remarks>
+public class Struna
 {
 
     /// <summary>

@@ -1,37 +1,48 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System.Text.Json.Serialization;
 
-var builder = WebApplication.CreateSlimBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
+
+// Load configuration from appsettings.json and environment variables
+builder.Configuration.AddJsonFile("appsettings.json", optional: true)
+                     .AddEnvironmentVariables();
+
+// Get DB provider and connection string from config/env
+var dbProvider = builder.Configuration["DbProvider"] ?? "sqlite";
+var connectionString = builder.Configuration["DbConnectionString"] ?? "Data Source=kithara.db";
+
+// Configure EF Core dynamically
+builder.Services.AddDbContext<KitharaDbContext>(options =>
+{
+    switch (dbProvider.ToLower())
+    {
+        case "postgres":
+        case "postgresql":
+            options.UseNpgsql(connectionString);
+            break;
+        case "sqlite":
+            options.UseSqlite(connectionString);
+            break;
+        default:
+            throw new InvalidOperationException($"Unsupported DB provider: {dbProvider}");
+    }
+});
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     // options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
 });
 
+builder.Services.AddControllers();
+
 var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
+app.MapControllers();
 
-// var sampleTodos = new Todo[] {
-//     new(1, "Walk the dog"),
-//     new(2, "Do the dishes", DateOnly.FromDateTime(DateTime.Now)),
-//     new(3, "Do the laundry", DateOnly.FromDateTime(DateTime.Now.AddDays(1))),
-//     new(4, "Clean the bathroom"),
-//     new(5, "Clean the car", DateOnly.FromDateTime(DateTime.Now.AddDays(2)))
-// };
+// Pass DbContext to endpoints
 
-// var todosApi = app.MapGroup("/todos");
-// todosApi.MapGet("/", () => sampleTodos);
-// todosApi.MapGet("/{id}", (int id) =>
-//     sampleTodos.FirstOrDefault(a => a.Id == id) is { } todo
-//         ? Results.Ok(todo)
-//         : Results.NotFound());
 
-// app.Run();
+app.Run();
 
-// public record Todo(int Id, string? Title, DateOnly? DueBy = null, bool IsComplete = false);
-
-// [JsonSerializable(typeof(Todo[]))]
-// internal partial class AppJsonSerializerContext : JsonSerializerContext
-// {
-
-// }
