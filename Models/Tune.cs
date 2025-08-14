@@ -14,12 +14,21 @@ public class Tune
 
     public string FilePath { get; set; } = string.Empty; // Path to audio file
 
+    public string Artist { get; set; } = string.Empty;
+
+    public string Album { get; set; } = string.Empty;
+
+    public string AlbumArtist { get; set; } = string.Empty;
+
+    public string Genre { get; set; } = string.Empty;
+
+    public string CoverArtUrl { get; set; } = string.Empty;
+
+    public int Year { get; set; }
+
     public Guid PlaylistId { get; set; }
     [ForeignKey("PlaylistId")]
     public Playlist? Playlist { get; set; }
-    // ...other properties (e.g., Artist, etc.)...
-    /// </remarks>
-    public string Artist { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets playlists associated with the audio file.
