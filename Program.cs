@@ -29,10 +29,9 @@ builder.Services.AddDbContext<KitharaDbContext>(options =>
     }
 });
 
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    // options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
-});
+
+// Register NeckService for audio stream management
+builder.Services.AddSingleton<INeckService, NeckService>();
 
 builder.Services.AddControllers();
 

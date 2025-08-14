@@ -1,31 +1,23 @@
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 /// <summary>
-/// Represents a model for a audio file in the radio service.
+/// Represents a model for an audio file in the radio service.
 /// </summary>
+[Table("Tunes")]
 public class Tune
 {
-    /// <summary>
-    /// Gets or sets the unique identifier for the audio file.
-    /// </summary>
+    [Key]
     public Guid Id { get; set; }
 
-    /// <summary>
-    /// Gets or sets the file name of the audio file.
-    /// </summary>
-    public string FIleName { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Gets or sets the title of the audio file.
-    /// </summary>
-    /// <remarks>
-    /// Needed for deduplication of audio files.
-    /// </remarks>
     public string Title { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Gets or sets the artist of the audio file.
-    /// </summary>
-    /// <remarks>
-    /// Needed for deduplication of audio files.
+    public string FilePath { get; set; } = string.Empty; // Path to audio file
+
+    public Guid PlaylistId { get; set; }
+    [ForeignKey("PlaylistId")]
+    public Playlist? Playlist { get; set; }
+    // ...other properties (e.g., Artist, etc.)...
     /// </remarks>
     public string Artist { get; set; } = string.Empty;
 
