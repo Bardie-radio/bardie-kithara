@@ -1,5 +1,6 @@
 # System Context (C4 Level 1)
 
+<!-- mermaid-source: diagrams/system-context.mmd -->
 ```mermaid
 flowchart TB
   subgraph users [Users]
@@ -13,7 +14,7 @@ flowchart TB
     Auth[Auth Adapters]
   end
   subgraph external [External]
-    Players[VLC VRChat]
+    Players[Player]
     OTel[OTel Collector]
   end
   DJ --> Clients
@@ -23,11 +24,12 @@ flowchart TB
   Kithara --> Src
   Kithara --> Auth
   bardie --> OTel
-  modules --> OTel
 ```
 
-Bardie is a **self-hosted modular audio broadcast platform**. Users create **Strunas** (streams), queue music via source modules, and interact through **client modules** (Plume, Discord bot, Telegram bot, …) or listen via legacy players.
+**Kithara** is the core of Bardie: Struna (stream) lifecycle, module orchestration, and ICY audio output. DJs create and control Strunas through **client modules**; listeners can also tune in with ordinary players.
 
-**Org overview:** [Bardie-radio/.github/docs/architecture](https://github.com/Bardie-radio/.github/tree/main/docs/architecture)
+This page is the Kithara-side view. Whole-ecosystem actors and journeys live in the [org ecosystem context](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/02-ecosystem-context.md).
 
-**Read next:** [02-container-diagram.md](02-container-diagram.md)
+**Related:** [glossary](../glossary.md) · [org architecture hub](https://github.com/Bardie-radio/.github/tree/main/profile/docs/architecture)
+
+**Read next:** [02-internal-structure.md](02-internal-structure.md)

@@ -3,24 +3,24 @@
 ```mermaid
 flowchart TB
   Plume -->|discovery| Kithara
-  Kithara -->|GetProviders| Local[bardie-auth-local]
+  Kithara -->|GetProviders| Local[login+password MVP]
   Kithara -->|ValidateToken| Local
-  Kithara -.->|v0.2| OIDC[bardie-auth-oidc]
+  Kithara -.->|v0.2| OIDC[OIDC adapter]
 ```
 
-**Auth adapters** mirror source modules: separate repos/containers registered with Kithara's **auth orchestrator** (inside Kithara, not a separate core).
+**Auth adapters** mirror source modules: separate repos/containers registered with Kithara's **auth orchestrator** (the router lives inside Kithara). You swap login styles without rebuilding the core.
 
 ## MVP
 
-| Repo | Role |
-|------|------|
-| `bardie-auth-local` | Login+password, token issuance, `form_schema` UI |
+| Module | Role |
+|--------|------|
+| Login+password adapter *(name TBD)* | Username/password, token issuance, `form_schema` UI for Plume |
 
 ## v0.2+
 
-| Repo | Role |
-|------|------|
-| `bardie-auth-oidc` | External OIDC (Zitadel, Google, …) |
+| Module | Role |
+|--------|------|
+| OIDC adapter *(name TBD)* | External OIDC (Zitadel, Google, …) |
 
 ## Adapter-owned login UI
 

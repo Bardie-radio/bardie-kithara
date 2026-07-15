@@ -1,5 +1,6 @@
 # Runtime Data Flow
 
+<!-- mermaid-source: diagrams/runtime-data-flow.mmd -->
 ```mermaid
 flowchart TB
   subgraph control [Control Plane gRPC]

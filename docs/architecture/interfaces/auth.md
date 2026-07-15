@@ -4,7 +4,7 @@
 sequenceDiagram
   participant Plume
   participant Kithara
-  participant Adapter as auth-local
+  participant Adapter as Auth adapter MVP
 
   Plume->>Kithara: GET /api/auth/discovery
   Kithara->>Adapter: GetProviders
@@ -20,7 +20,7 @@ sequenceDiagram
 
 `GET /api/auth/discovery` — Kithara auth orchestrator merges `GetProviders()` from all registered adapters.
 
-MVP response includes one `form_schema` provider from `bardie-auth-local`.
+MVP response includes one `form_schema` provider from the login+password adapter (module name TBD).
 
 ## Permission matrix (sketch)
 

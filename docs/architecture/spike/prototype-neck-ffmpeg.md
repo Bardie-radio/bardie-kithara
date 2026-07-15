@@ -46,4 +46,6 @@ flowchart LR
 - [Struna.cs](../../Models/Struna.cs) — no slug, access modes, or source binding
 - [Tune.cs](../../Models/Tune.cs) — `PlaylistId` + `Playlists` conflict
 
+**Related:** [ADR 002](../adrs/002-kithara-native-ffmpeg-streaming.md) · [domains/streams.md](../domains/streams.md) · [glossary](../glossary.md)
+
 **Read next:** [../README.md](../README.md)
