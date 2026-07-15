@@ -1,0 +1,65 @@
+# Kithara Architecture Documentation
+
+```mermaid
+flowchart LR
+  subgraph read_order [Recommended read order]
+    A[overview/01-system-context] --> B[domains/source-instances]
+    B --> C[domains/streams]
+    C --> D[interfaces/rest-api]
+    D --> E[mvp/v0.1-scope]
+  end
+```
+
+Deep-dive architecture for **Kithara** — the Bardie core backend. For ecosystem orientation, start at the [org architecture hub](https://github.com/Bardie-radio/.github/tree/main/docs/architecture).
+
+## Quick links
+
+| Section | Purpose |
+|---------|---------|
+| [Glossary](glossary.md) | Codenames + plain English |
+| [Overview](overview/) | System context, containers, data flow |
+| [Domains](domains/) | Streams, source instances, auth, playback |
+| [Interfaces](interfaces/) | REST, gRPC, streaming, routing |
+| [Operations](operations/) | Deploy, config, observability |
+| [ADRs](adrs/) | Architecture decision records |
+| [MVP](mvp/) | v0.1 scope and milestones |
+| [Spike](spike/) | Prototype assessment |
+
+## Read paths
+
+**New contributor** — `overview/01` → `glossary` → `domains/source-instances` → `adrs/001`–`004`
+
+**Module author** — `interfaces/grpc-source-module` → `interfaces/grpc-auth-adapter` → `operations/observability`
+
+**Self-hoster** — `operations/deployment` → `mvp/v0.1-scope` → `interfaces/uri-routing`
+
+## Child pages
+
+### Overview
+- [01-system-context](overview/01-system-context.md)
+- [02-container-diagram](overview/02-container-diagram.md)
+- [03-runtime-data-flow](overview/03-runtime-data-flow.md)
+
+### Domains
+- [streams](domains/streams.md)
+- [source-instances](domains/source-instances.md)
+- [source-modules](domains/source-modules.md)
+- [auth-adapters](domains/auth-adapters.md)
+- [struna-access](domains/struna-access.md)
+- [library-and-tunes](domains/library-and-tunes.md)
+- [playback-control](domains/playback-control.md)
+- [clients](domains/clients.md)
+
+### Interfaces
+- [rest-api](interfaces/rest-api.md)
+- [grpc-source-module](interfaces/grpc-source-module.md)
+- [grpc-auth-adapter](interfaces/grpc-auth-adapter.md)
+- [uri-routing](interfaces/uri-routing.md)
+- [http-stream-output](interfaces/http-stream-output.md)
+- [streaming-stack](interfaces/streaming-stack.md)
+- [auth](interfaces/auth.md)
+
+### Operations
+- [deployment](operations/deployment.md)
+- [configuration](operations/configuration.md)
+- [observability](operations/observability.md)
