@@ -8,9 +8,7 @@ flowchart TB
   end
   subgraph bardie [Bardie]
     Kithara[Kithara]
-    Plume[Plume]
-  end
-  subgraph modules [Modules]
+    Clients[Client Modules]
     Src[Source Modules]
     Auth[Auth Adapters]
   end
@@ -18,9 +16,9 @@ flowchart TB
     Players[VLC VRChat]
     OTel[OTel Collector]
   end
-  DJ --> Plume
+  DJ --> Clients
   Listener --> Players
-  Plume --> Kithara
+  Clients --> Kithara
   Players --> Kithara
   Kithara --> Src
   Kithara --> Auth
@@ -28,7 +26,7 @@ flowchart TB
   modules --> OTel
 ```
 
-Bardie is a **self-hosted modular audio broadcast platform**. Users create **Strunas** (streams), queue music via source modules, and listen via legacy players or Plume.
+Bardie is a **self-hosted modular audio broadcast platform**. Users create **Strunas** (streams), queue music via source modules, and interact through **client modules** (Plume, Discord bot, Telegram bot, …) or listen via legacy players.
 
 **Org overview:** [Bardie-radio/.github/docs/architecture](https://github.com/Bardie-radio/.github/tree/main/docs/architecture)
 

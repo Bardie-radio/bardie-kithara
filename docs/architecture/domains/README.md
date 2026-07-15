@@ -11,6 +11,6 @@ Business concepts and lifecycle rules for Kithara.
 | [auth-adapters.md](auth-adapters.md) | Auth module registration |
 | [playback-control.md](playback-control.md) | Broadcast skip/queue |
 | [library-and-tunes.md](library-and-tunes.md) | Tune as library ref |
-| [clients.md](clients.md) | Plume, bots |
+| [clients.md](clients.md) | Client modules: Plume, Discord, Telegram |
 
 **Start here:** [source-instances.md](source-instances.md)
