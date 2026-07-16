@@ -1,0 +1,27 @@
+flowchart TB
+  subgraph inbound [Inbound]
+    HTTP[HTTP :8080]
+    GRPC[gRPC :5000]
+  end
+  subgraph kithara [Kithara]
+    API[REST API]
+    StreamSrv[Stream Server]
+    AuthOrch[Auth Orchestrator]
+    Registry[Module Registry]
+    Neck[Neck Service]
+    Persist[(Persistence)]
+  end
+  subgraph runtime [Per-Struna runtime]
+    Encoder[Struna Encoder FFmpeg]
+  end
+  HTTP --> API
+  HTTP --> StreamSrv
+  GRPC --> Registry
+  API --> AuthOrch
+  API --> Neck
+  API --> Persist
+  AuthOrch --> Registry
+  Neck --> Registry
+  Neck --> Encoder
+  Encoder --> StreamSrv
+  Neck --> Persist

@@ -53,3 +53,19 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 .vscode
+
+# Ignore all hidden files and folders (except .gitignore, .gitattributes, .gitmodules, .github/)
+.*
+!.gitignore
+!.gitattributes
+!.gitmodules
+!.github/
+# Common additional exclusions for local/editor settings
+.env
+.env.*
+*.env
+.idea/
+DS_Store
+# Ignore backup and swap files
+*.swp
+*.swo

@@ -1,5 +1,7 @@
 # Configuration
 
+Env and Compose knobs for the **Kithara container** — how it finds its database, collectors, and modules.
+
 ## Kithara
 
 | Variable | Description |
@@ -16,13 +18,16 @@ Source and auth modules register via gRPC on startup. Compose sets:
 - `KITHARA_GRPC_ADDRESS=kithara:5000`
 - Per-module listen address advertised in `Register` call
 
-## Auth-local (MVP)
+## Login+password auth adapter (MVP)
 
 - User store path or bootstrap admin
 - Token signing secret (compose secret)
+- Module and repo name undecided
 
 ## Reserved slugs
 
 Configured list: `api`, `stream`, `admin`, `player`, …
+
+**Related:** [deployment.md](deployment.md) · [observability.md](observability.md)
 
 **Read next:** [observability.md](observability.md)

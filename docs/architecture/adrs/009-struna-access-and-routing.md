@@ -29,7 +29,14 @@ Streams need human-readable URLs, separate listen vs control permissions, and le
 
 - Paste-friendly URLs for VLC/VRChat on public/protected streams.
 - Private playback incompatible with most legacy players (by design).
-- Guest code enables party DJ without accounts.
+- Guest codes enable party DJ without accounts.
+
+## Repos needing follow-up
+
+| Decision | Follow up in |
+|----------|----------------|
+| URI map + Plume routes | **bardie-plume**, org edge/Compose ([05-deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md)) |
+| Listen token / guest code UX | **bardie-plume**, auth adapters as needed |
 
 ## Alternatives considered
 

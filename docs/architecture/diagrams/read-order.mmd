@@ -1,0 +1,7 @@
+flowchart LR
+  subgraph read_order [Recommended read order]
+    A[overview/01-system-context] --> B[domains/source-instances]
+    B --> C[domains/streams]
+    C --> D[interfaces/rest-api]
+    D --> E[mvp/v0.1-scope]
+  end

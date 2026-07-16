@@ -9,15 +9,15 @@ Auth must be modular (login+password, OIDC, custom) without forcing self-hosted 
 ## Decision
 
 - **Auth orchestrator** lives **inside Kithara** (registry, discovery aggregation, token routing, service tokens).
-- **Auth adapters** are separate repos/containers (`bardie-auth-local` MVP, `bardie-auth-oidc` v0.2).
+- **Auth adapters** are separate repos/containers (login+password for MVP; OIDC in v0.2). Module and repo names are undecided.
 - Multiple adapters attach simultaneously; discovery merges all providers.
 - **Adapter-owned login UI** — Plume delegates via `uiMode` (form_schema, embed, redirect).
 - Service tokens for bots validated in Kithara config (no adapter container).
 
 ## Consequences
 
-- No separate `bardie-auth-core` container.
-- MVP: `bardie-auth-local` only; no external IdP required.
+- No separate auth-core container (rejected alternative).
+- MVP: login+password adapter only; no external IdP required.
 - Plume never hardcodes password fields.
 
 ## Alternatives considered

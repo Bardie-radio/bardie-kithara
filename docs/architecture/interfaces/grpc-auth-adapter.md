@@ -39,7 +39,7 @@ message AuthenticateResponse {
 }
 ```
 
-## MVP: `bardie-auth-local`
+## MVP: login+password adapter *(name TBD)*
 
 Implements `Authenticate` + `ValidateToken` + `GetProviders` with `uiMode=form_schema`.
 

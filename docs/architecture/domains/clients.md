@@ -67,7 +67,7 @@ No gRPC required for client modules — REST only. Source and auth adapters use 
 
 ## OTel
 
-Client modules export full OTLP — first-class in the trace graph ([ADR 008](../adrs/008-otel-observability.md)).
+Client modules export OTLP and show up in the same trace graph as Kithara ([ADR 008](../adrs/008-otel-observability.md)).
 
 **Related:** [interfaces/uri-routing.md](../interfaces/uri-routing.md) · [domains/struna-access.md](struna-access.md)
 

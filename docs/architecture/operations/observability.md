@@ -11,7 +11,7 @@ flowchart LR
   Collector --> Prom[Metrics]
 ```
 
-**Principle: everything is under coverage.** ([ADR 008](../adrs/008-otel-observability.md))
+**Principle: everything is under coverage.** If it rides the Bardie bus, it exports OTLP ([ADR 008](../adrs/008-otel-observability.md)).
 
 ## Mandatory telemetry
 
@@ -19,8 +19,8 @@ flowchart LR
 |-----------|---------------------|
 | Kithara | `bardie.kithara` |
 | Plume | `bardie.plume` |
-| YouTube module | `bardie.source.youtube` |
-| auth-local | `bardie.auth.local` |
+| Source modules | `bardie.source.*` *(suffix TBD with module name)* |
+| Auth adapters | `bardie.auth.*` *(suffix TBD with module name)* |
 
 ## Module contract
 
@@ -38,12 +38,23 @@ Every module must:
 
 ## Trace scenarios
 
-1. Login: Plume → Kithara → auth-local `Authenticate` → `ValidateToken`
+1. Login: Plume → Kithara → auth adapter `Authenticate` → `ValidateToken`
 2. Play: Plume → API → source `CreateInstance` → Neck → Stream Server
 3. Legacy listen: Player → `/stream/{slug}` (root span with slug attribute)
 
 ## Reference stack
 
 Grafana Tempo + Loki + Prometheus via OTel Collector. Backends swappable — OTLP is normative.
+
+## Repos needing follow-up
+
+| Naming / contract | Follow up in |
+|-------------------|----------------|
+| `bardie.plume` OTLP export | **bardie-plume** |
+| `bardie.source.*` | Source module repos (names TBD) |
+| `bardie.auth.*` | Auth adapter repos (login+password MVP name/repo TBD) |
+| Collector Compose / optional backends | Org [05-deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md) |
+
+**Related:** [ADR 008](../adrs/008-otel-observability.md) · [configuration.md](configuration.md)
 
 **Read next:** [../mvp/v0.1-scope.md](../mvp/v0.1-scope.md)

@@ -11,7 +11,7 @@ flowchart LR
 
 A **Tune** (library item) is metadata + optional cache path for content that can be replayed (files, ytdl downloads). It is **not owned by a Struna**.
 
-## When tunes are used
+## Where tunes apply
 
 | Source | Tune required? |
 |--------|----------------|
@@ -26,5 +26,7 @@ A **Tune** (library item) is metadata + optional cache path for content that can
 ## Prototype artifacts
 
 Current [Tune.cs](../../Models/Tune.cs) has conflicting `PlaylistId` FK and `List<Playlist> Playlists`. Target model uses a **shared library** + queue references — see [ADR 006](../adrs/006-stream-source-tune-data-model.md).
+
+**Related:** [ADR 006](../adrs/006-stream-source-tune-data-model.md) · [playback-control.md](playback-control.md) · [glossary](../glossary.md)
 
 **Read next:** [playback-control.md](playback-control.md)

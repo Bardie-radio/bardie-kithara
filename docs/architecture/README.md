@@ -1,5 +1,6 @@
 # Kithara Architecture Documentation
 
+<!-- mermaid-source: diagrams/read-order.mmd -->
 ```mermaid
 flowchart LR
   subgraph read_order [Recommended read order]
@@ -10,14 +11,14 @@ flowchart LR
   end
 ```
 
-Deep-dive architecture for **Kithara** — the Bardie core backend. For ecosystem orientation, start at the [org architecture hub](https://github.com/Bardie-radio/.github/tree/main/docs/architecture).
+Deep-dive architecture for **Kithara** — the Bardie core backend. For ecosystem orientation, start at the [org architecture hub](https://github.com/Bardie-radio/.github/tree/main/profile/docs/architecture).
 
 ## Quick links
 
 | Section | Purpose |
 |---------|---------|
 | [Glossary](glossary.md) | Codenames + plain English |
-| [Overview](overview/) | System context, containers, data flow |
+| [Overview](overview/) | System context, internal structure, data flow |
 | [Domains](domains/) | Streams, source instances, auth, playback |
 | [Interfaces](interfaces/) | REST, gRPC, streaming, routing |
 | [Operations](operations/) | Deploy, config, observability |
@@ -31,23 +32,23 @@ Deep-dive architecture for **Kithara** — the Bardie core backend. For ecosyste
 
 **Module author** — `interfaces/grpc-source-module` → `interfaces/grpc-auth-adapter` → `operations/observability`
 
-**Self-hoster** — `operations/deployment` → `mvp/v0.1-scope` → `interfaces/uri-routing`
+**Self-hoster** — [org deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md) → `operations/deployment` (this container) → `mvp/v0.1-scope` → `interfaces/uri-routing`
 
 ## Child pages
 
 ### Overview
 - [01-system-context](overview/01-system-context.md)
-- [02-container-diagram](overview/02-container-diagram.md)
+- [02-internal-structure](overview/02-internal-structure.md)
 - [03-runtime-data-flow](overview/03-runtime-data-flow.md)
 
 ### Domains
-- [streams](domains/streams.md)
 - [source-instances](domains/source-instances.md)
+- [streams](domains/streams.md)
+- [struna-access](domains/struna-access.md)
 - [source-modules](domains/source-modules.md)
 - [auth-adapters](domains/auth-adapters.md)
-- [struna-access](domains/struna-access.md)
-- [library-and-tunes](domains/library-and-tunes.md)
 - [playback-control](domains/playback-control.md)
+- [library-and-tunes](domains/library-and-tunes.md)
 - [clients](domains/clients.md)
 
 ### Interfaces
@@ -63,3 +64,13 @@ Deep-dive architecture for **Kithara** — the Bardie core backend. For ecosyste
 - [deployment](operations/deployment.md)
 - [configuration](operations/configuration.md)
 - [observability](operations/observability.md)
+
+### MVP
+- [v0.1-scope](mvp/v0.1-scope.md)
+- [v0.1-milestones](mvp/v0.1-milestones.md)
+
+### Spike
+- [prototype-neck-ffmpeg](spike/prototype-neck-ffmpeg.md)
+
+### ADRs
+- See [adrs/](adrs/)

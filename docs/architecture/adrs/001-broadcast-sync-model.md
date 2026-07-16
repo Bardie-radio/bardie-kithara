@@ -4,7 +4,7 @@
 
 ## Context
 
-Bardie promises "one audio stream for everyone." Multiple sync models exist: live broadcast (radio), synchronized local playback (Spotify Jam-like), or hybrid.
+Everyone on a Struna should hear the same moment — think radio, not a Spotify Jam clone chasing per-listener seek. Other sync models exist (synchronized local playback, hybrid); this ADR picks one.
 
 ## Decision
 

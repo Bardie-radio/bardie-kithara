@@ -29,4 +29,6 @@ Bardie uses **live broadcast** semantics ([ADR 001](../adrs/001-broadcast-sync-m
 
 Controlled by Struna **control access** mode — see [struna-access.md](struna-access.md).
 
+**Related:** [ADR 001](../adrs/001-broadcast-sync-model.md) · [struna-access.md](struna-access.md) · [streams.md](streams.md)
+
 **Read next:** [clients.md](clients.md)

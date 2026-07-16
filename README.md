@@ -10,7 +10,7 @@ Kithara is the main instrument of the Bardie ecosystem. It exposes a REST API fo
 
 ## ✨ Features
 
-- 🎧 **Live broadcast** — one encoder per stream; everyone hears the same moment
+- 🎧 **Live broadcast** — one encoder per Struna (stream); everyone hears the same moment
 - 🧩 **Modular ecosystem** — client, source, and auth adapters plug into a shared core
 - 🔐 **Flexible access** — independent playback and control permissions per stream
 - 📡 **Native streaming** — FFmpeg → ICY-over-HTTP at `/stream/{slug}`
@@ -39,12 +39,12 @@ Kithara sits at the center of Bardie. **Client modules**, **source modules**, an
 │   ├── Discord bot      → Voice channels + stream control (name TBD)
 │   └── Telegram bot     → Remote Struna control (name TBD)
 ├── Source modules       → Audio providers (gRPC + Unix socket)
-│   ├── YouTube / ytdl   → Search and play from online sources
+│   ├── YouTube / ytdl   → Search and play from online sources (name TBD)
 │   ├── Local input      → Re-broadcast direct audio from your PC
 │   └── File source      → Play uploaded audio files
-├── Auth adapters        → Login and token validation (gRPC)
-│   ├── auth-local       → Username + password (MVP)
-│   └── auth-oidc        → Zitadel, Google, … (v0.2)
+├── Auth adapters        → Login and token validation (gRPC; names TBD)
+│   ├── Login + password → MVP local accounts
+│   └── OIDC             → Zitadel, Google, … (v0.2)
 └── Legacy players       → Listen-only: VLC, VRChat via /stream/{slug}
 ```
 
@@ -55,10 +55,13 @@ More client modules may follow — Bardie does not assume a single UI; it assume
 | Path | Handler |
 |------|---------|
 | `/api` | Kithara REST API |
-| `/stream/{slug}` | Live ICY-over-HTTP audio |
-| `/player/{slug}` | Stream control surface (Plume) |
+| `/stream/{slug}` | Live ICY-over-HTTP audio (Kithara) |
+| `/player/{slug}` | Stream control surface (**Plume** — not served by Kithara) |
+| `/` | Plume main UI |
 
-Ecosystem overview: [Bardie-radio/.github](https://github.com/Bardie-radio/.github/tree/main/docs/architecture)
+Full routing detail: [uri-routing](docs/architecture/interfaces/uri-routing.md).
+
+Ecosystem overview: [org architecture hub](https://github.com/Bardie-radio/.github/tree/main/profile/docs/architecture)
 
 ---
 
@@ -66,7 +69,7 @@ Ecosystem overview: [Bardie-radio/.github](https://github.com/Bardie-radio/.gith
 
 | Section | Contents |
 |---------|----------|
-| [Overview](docs/architecture/overview/) | System context, containers, data flow |
+| [Overview](docs/architecture/overview/) | System context, internal structure, data flow |
 | [Domains](docs/architecture/domains/) | Streams, source instances, auth, [clients](docs/architecture/domains/clients.md) |
 | [Interfaces](docs/architecture/interfaces/) | REST API, gRPC contracts, streaming |
 | [ADRs](docs/architecture/adrs/) | Architecture decision records |
@@ -79,4 +82,6 @@ Ecosystem overview: [Bardie-radio/.github](https://github.com/Bardie-radio/.gith
 
 Kithara is designed to run as part of a self-hosted Bardie stack — typically alongside Plume (or another client module), source modules, and an auth adapter behind a reverse proxy.
 
-See [deployment guide](docs/architecture/operations/deployment.md) and [MVP scope](docs/architecture/mvp/v0.1-scope.md) for the reference Compose layout.
+- Whole stack: [org deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md)
+- This container: [operations/deployment](docs/architecture/operations/deployment.md)
+- MVP layout: [mvp/v0.1-scope](docs/architecture/mvp/v0.1-scope.md)
