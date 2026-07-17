@@ -1,9 +1,0 @@
-flowchart TB
-  subgraph control [Control Plane gRPC]
-    API -->|CreateInstance| SrcMod[Source Module]
-    API -->|ValidateToken| AuthMod[Auth Adapter]
-  end
-  subgraph audio [Audio Plane sockets]
-    SrcMod -->|socket| FF[FFmpeg]
-    FF -->|pipe| SS[Stream Server]
-  end

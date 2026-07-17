@@ -12,7 +12,11 @@ on:
 jobs:
   check:
     if: github.event_name == 'pull_request'
-    uses: Bardie-radio/.github/.github/workflows/reusable-mermaid-check.yml@main
+    # Pin to pre_docs until Bardie-radio/.github#3 lands on main (root-path mermaid-sync).
+    # After merge: switch both lines back to @main / ci_ref main (or drop ci_ref).
+    uses: Bardie-radio/.github/.github/workflows/reusable-mermaid-check.yml@pre_docs
+    with:
+      ci_ref: pre_docs
     permissions:
       contents: read
       pull-requests: write
@@ -29,7 +33,9 @@ jobs:
         github.event.review.body != '' &&
         contains(github.event.review.body, '/mermaid-sync')
       )
-    uses: Bardie-radio/.github/.github/workflows/reusable-mermaid-resolve.yml@main
+    uses: Bardie-radio/.github/.github/workflows/reusable-mermaid-resolve.yml@pre_docs
+    with:
+      ci_ref: pre_docs
     permissions:
       contents: write
       pull-requests: write

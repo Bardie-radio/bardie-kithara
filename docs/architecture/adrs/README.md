@@ -5,8 +5,8 @@
 | [001](001-broadcast-sync-model.md) | Broadcast sync model |
 | [002](002-kithara-native-ffmpeg-streaming.md) | Kithara-native FFmpeg streaming |
 | [003](003-grpc-control-plane.md) | gRPC control plane |
-| [004](004-source-instance-socket-audio-plane.md) | Source instance socket audio plane |
-| [005](005-isolated-instance-per-stream.md) | Isolated instance per stream |
+| [004](004-source-instance-socket-audio-plane.md) | Session FIFO audio plane |
+| [005](005-isolated-instance-per-stream.md) | Isolated track jobs per stream |
 | [006](006-stream-source-tune-data-model.md) | Stream / source / tune data model |
 | [007](007-auth-adapter-modules.md) | Auth adapter modules |
 | [008](008-otel-observability.md) | OpenTelemetry observability |

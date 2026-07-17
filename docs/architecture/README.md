@@ -1,6 +1,6 @@
 # Kithara Architecture Documentation
 
-<!-- mermaid-source: diagrams/read-order.mmd -->
+<!-- mermaid-source: docs/architecture/diagrams/read-order.mmd -->
 ```mermaid
 flowchart LR
   subgraph read_order [Recommended read order]

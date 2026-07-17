@@ -1,43 +1,62 @@
-# Source Instances
+# Source sessions and track jobs
 
 ```mermaid
 sequenceDiagram
-  participant Kithara
-  participant Module as Source_Module
-  participant Encoder as Struna_Encoder
+  participant API as Kithara_API
+  participant Neck
+  participant ModA as Source_A
+  participant ModB as Source_B
+  participant FF as FFmpeg
 
-  Kithara->>Module: CreateInstance(trackRef)
-  Module-->>Kithara: instanceId + socketPath
-  Kithara->>Encoder: attach(socketPath)
-  Module-->>Kithara: InstanceStatus stream
-  Kithara->>Module: StopInstance(instanceId)
+  API->>Neck: Struna create alive
+  Neck->>FF: start once on session FIFO
+  API->>Neck: play YouTube entry
+  Neck->>ModA: StartTrack fifoPath trackRef
+  ModA-->>FF: PCM into FIFO
+  Note over Neck,ModA: Queue shift — kill decoder only
+  Neck->>ModA: StopTrack
+  API->>Neck: play other module entry
+  Neck->>ModB: StartTrack same FIFO
+  ModB-->>FF: PCM into same FIFO
+  API->>Neck: owner Stop
+  Neck->>FF: kill
+  Neck->>ModB: StopTrack
 ```
 
-The **source instance** is Bardie's core audio abstraction — an ephemeral playback handle created by a source module.
+Audio for a Struna uses a **long-lived session** (FFmpeg + Kithara-owned FIFO) and short-lived **track jobs** on source modules. Different modules can take turns on one Struna.
 
-## Lifecycle
+## Lifetimes
 
-| Phase | Action | Owner |
-|-------|--------|-------|
-| Create | `CreateInstance` gRPC | Module spawns decode pipeline + socket |
-| Attach | FFmpeg reads socket | Neck / Struna Encoder |
-| Detach | Stop reading socket | Neck (instance may survive) |
-| Stop | `StopInstance` | Module tears down resources |
+| Piece | Lifetime | On queue shift |
+|-------|----------|----------------|
+| FFmpeg / Struna Encoder | Entire Struna alive period | **Never kill** (restarting breaks many ICY players) |
+| Session FIFO (Kithara-owned) | Same | **Reuse** |
+| Track job (decode) | One queue item | **StopTrack → StartTrack** on possibly another module |
 
-## Properties
+## Silence
 
-- **Isolated per Struna** — same track on two Strunas = two instances ([ADR 005](../adrs/005-isolated-instance-per-stream.md)).
-- **Socket endpoint** — Unix domain socket path returned in gRPC response.
-- **Parallelism** — module enforces resource limits; Kithara tracks N active instances.
+While alive with no module writer, Neck’s **silence feeder** writes to the FIFO so FFmpeg never sees a fatal EOF (idle between tracks, pause, empty queue).
+
+## Informal prewarm
+
+Modules may buffer the next track before their turn. No MVP `PrepareTrack` RPC.
+
+## Isolation
+
+Track jobs stay **isolated per Struna** — same track on two Strunas means two jobs ([ADR 005](../adrs/005-isolated-instance-per-stream.md)). No sharing FIFOs across Strunas.
+
+## Canonical PCM
+
+MVP default internal format: **s16le / 48 kHz / stereo**. Listener encode (MP3/ICY) is separate — see encode modes on Struna create.
 
 ## gRPC surface
 
-See [interfaces/grpc-source-module.md](../interfaces/grpc-source-module.md): `CreateInstance`, `StopInstance`, `Search`, `InstanceStatus`, `Health`.
+See [interfaces/grpc-source-module.md](../interfaces/grpc-source-module.md): `StartTrack`, `StopTrack`, `Search`, `TrackStatus`, `Health`, `Register`.
 
 ## Replaces prototype approach
 
-Prototype [Neck.cs](../../Services/Neck.cs) concatenated playlist files in FFmpeg. Target architecture feeds **one instance socket** per active Struna.
+Prototype [Neck.cs](../../Services/Neck.cs) concatenated playlist files in FFmpeg. Target: modules write PCM into a Neck-owned FIFO while FFmpeg stays up for the Struna life.
 
-**Related:** [ADR 004](../adrs/004-source-instance-socket-audio-plane.md) · [domains/streams.md](streams.md)
+**Related:** [ADR 004](../adrs/004-source-instance-socket-audio-plane.md) · [domains/streams.md](streams.md) · [interfaces/streaming-stack.md](../interfaces/streaming-stack.md)
 
 **Read next:** [streams.md](streams.md)

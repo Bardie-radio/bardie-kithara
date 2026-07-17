@@ -33,13 +33,13 @@ Every module must:
 ## Span attributes
 
 - `struna.id`, `struna.slug`, `playback.access`, `control.access`
-- `source.instance.id`, `auth.adapter.id`
+- `source.module`, `source.track_job.id`, `auth.provider.id`
 - **Never** log tokens or passwords
 
 ## Trace scenarios
 
-1. Login: Plume → Kithara → auth adapter `Authenticate` → `ValidateToken`
-2. Play: Plume → API → source `CreateInstance` → Neck → Stream Server
+1. Login: Client → Kithara `Authenticate` / OIDC callback → provider identity proof → Kithara JWT issue
+2. Play: Client → API → source `StartTrack` → Neck FIFO/encoder → Stream Server
 3. Legacy listen: Player → `/stream/{slug}` (root span with slug attribute)
 
 ## Reference stack

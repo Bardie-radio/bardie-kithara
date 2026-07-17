@@ -10,9 +10,10 @@ flowchart LR
   end
   subgraph target [Target]
     Mod[Source Module]
+    FIFO[Session FIFO]
     Neck2[Neck Service]
     SS[Stream Server]
-    Mod -->|socket| Neck2 --> SS
+    Mod -->|PCM| FIFO --> Neck2 --> SS
   end
 ```
 
@@ -28,24 +29,24 @@ flowchart LR
 
 | Spike behavior | Target replacement |
 |----------------|-------------------|
-| Singleton `NeckService` + scoped `DbContext` | Scoped Neck + `IDbContextFactory` |
-| Playlist → FFmpeg `concat:` shuffle | Source instance → per-Struna encoder |
+| Singleton `NeckService` + scoped `DbContext` | Hosted FFmpeg supervisor + `IDbContextFactory` |
+| Playlist → FFmpeg `concat:` shuffle | Module track jobs → session FIFO → per-Struna encoder |
 | No HTTP API wiring | `POST /api/streams/{id}/play` etc. |
 | Output URL as FFmpeg arg (Icecast-style) | Pipe → Kithara Stream Server |
 | ICY via `process.StandardInput` | Stream Server `icy-metaint` injection |
-| `StartStreamAsync(playlistId, stream)` | `CreateInstance` via source module |
+| `StartStreamAsync(playlistId, stream)` | `StartTrack` via source module |
 
 ## What to keep
 
 - **Neck** name and role — stream lifecycle manager inside Kithara
 - FFmpeg as encoding engine ([ADR 002](../adrs/002-kithara-native-ffmpeg-streaming.md))
-- Active stream tracking concept (maps to Struna state)
+- Active stream tracking concept (maps to alive Struna state)
 
 ## Prototype model gaps
 
 - [Struna.cs](../../Models/Struna.cs) — no slug, access modes, or source binding
 - [Tune.cs](../../Models/Tune.cs) — `PlaylistId` + `Playlists` conflict
 
-**Related:** [ADR 002](../adrs/002-kithara-native-ffmpeg-streaming.md) · [domains/streams.md](../domains/streams.md) · [glossary](../glossary.md)
+**Related:** [ADR 002](../adrs/002-kithara-native-ffmpeg-streaming.md) · [ADR 004](../adrs/004-source-instance-socket-audio-plane.md) · [domains/streams.md](../domains/streams.md) · [glossary](../glossary.md)
 
 **Read next:** [../README.md](../README.md)

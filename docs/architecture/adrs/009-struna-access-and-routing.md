@@ -17,13 +17,13 @@ Streams need human-readable URLs, separate listen vs control permissions, and le
 | `/stream/{slug}` | Kithara Stream Server |
 | `/player/{slug}` | Plume control page |
 
-**Slug:** user-chosen; unique among **active** Strunas; freed on delete/stop.
+**Slug:** user-chosen; unique among **alive** Strunas; freed on **stop** (or silent cleanup), not conflated with delete.
 
 **Playback access** (independent): `public` | `protected` (listen token) | `private` (full auth).
 
 **Control access** (independent): `private` (auth) | `protected` (guest code). **No public control.**
 
-**Protected playback MVP:** query param `/stream/{slug}?token=...`. Basic Auth and path token documented for v0.2 evaluation.
+**Protected playback MVP:** query param `/stream/{slug}?token=...`. Listen token and guest code are **Kithara-owned** Struna secrets. Basic Auth and path token documented for v0.2 evaluation.
 
 ## Consequences
 
@@ -36,7 +36,7 @@ Streams need human-readable URLs, separate listen vs control permissions, and le
 | Decision | Follow up in |
 |----------|----------------|
 | URI map + Plume routes | **bardie-plume**, org edge/Compose ([05-deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md)) |
-| Listen token / guest code UX | **bardie-plume**, auth adapters as needed |
+| Listen token / guest code UX | **bardie-plume** (Kithara owns the secrets) |
 
 ## Alternatives considered
 

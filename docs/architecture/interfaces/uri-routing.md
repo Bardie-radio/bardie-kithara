@@ -16,9 +16,9 @@ One public domain; path-based routing at the reverse-proxy edge (bundled in Comp
 
 | Path             | Target                | Auth                     |
 | ---------------- | --------------------- | ------------------------ |
-| `/`              | Plume                 | Yes (auth adapter)       |
+| `/`              | Plume (optional)      | Auth required when Plume is used |
 | `/player/{slug}` | Plume                 | Per Struna control mode  |
-| `/api/*`         | Kithara REST          | Per endpoint + token     |
+| `/api/*`         | Kithara REST          | Per endpoint + JWT / service token |
 | `/stream/{slug}` | Kithara Stream Server | Per Struna playback mode |
 
 ## Slug in URLs

@@ -10,18 +10,17 @@ flowchart TB
   subgraph listen [Listen-only]
     Players[Legacy Players VLC VRChat]
   end
-  Plume -->|/api Bearer| Kithara
+  Plume -->|/api Bearer JWT| Kithara
   Discord -->|service token| Kithara
   Telegram -->|service or user token| Kithara
-  Plume -->|/stream slug| StreamSrv[Stream Server]
-  Players -->|/stream slug| StreamSrv
+  Players -->|/stream slug| StreamSrv[Stream Server]
 ```
 
 Bardie's **user-facing surface is modular**. Client modules are separate deployable components that talk to Kithara's REST API — they are not baked into the core. Pick the interfaces that match how your community communicates.
 
 | Module | Channel | MVP | Role |
 |--------|---------|-----|------|
-| **Plume** | Web | Yes | List/create Strunas, control playback, optional in-browser listen |
+| **Plume** | Web | Yes (optional) | List/create Strunas, control playback, optional in-browser listen |
 | **Discord bot** *(name TBD)* | Discord | Future | Play streams in voice channels; queue and source control |
 | **Telegram bot** *(name TBD)* | Telegram | Future | Remote Struna control from chats |
 | *More TBD* | — | Future | As convenient channels are identified |
@@ -35,7 +34,7 @@ Bardie's **user-facing surface is modular**. Client modules are separate deploya
 | `/` | Main page — list/create Strunas (auth required) |
 | `/player/{slug}` | Queue control; browser player **off by default**; PWA later |
 
-Plume is the **reference client module** for MVP. It delegates login UI to auth adapters ([ADR 007](../adrs/007-auth-adapter-modules.md)).
+Plume is the **reference client module** for MVP — the stack still works without it (Kithara owns login/OIDC callback). Plume renders login UI from discovery (`form_schema` / redirect); it does not talk to auth adapters directly ([ADR 007](../adrs/007-auth-adapter-modules.md)).
 
 ## Discord bot *(name TBD)*
 

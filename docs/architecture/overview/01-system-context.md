@@ -1,6 +1,6 @@
 # System Context (C4 Level 1)
 
-<!-- mermaid-source: diagrams/system-context.mmd -->
+<!-- mermaid-source: docs/architecture/diagrams/system-context.mmd -->
 ```mermaid
 flowchart TB
   subgraph users [Users]

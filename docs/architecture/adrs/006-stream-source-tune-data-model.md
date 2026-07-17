@@ -8,17 +8,18 @@ Prototype models conflate playlists, tunes, and streams. Multi-source architectu
 
 ## Decision
 
-- **Struna (stream)** plays **source instances**, not tunes directly.
+- **Struna (stream)** plays **track jobs** from source modules into a session FIFO — not tunes directly.
 - **Tune** is a **library/cache reference** for file and ytdl sources; optional for live-input sources.
-- **QueueEntry** holds play intent; resolved to source instance at play time.
-- Struna has `slug` (public URL), internal `Id` (GUID), independent playback/control access fields.
+- **QueueEntry** holds play intent: **module slug + track ref** (optional Tune id); resolved with `StartTrack` at play time.
+- Struna has `slug` (public URL), internal `Id` (GUID), independent playback/control access fields, and listener encode mode.
 
 Prototype `Tune.PlaylistId` + `Tune.Playlists` and `Struna` without source binding are **spike artifacts**, not target schema.
 
 ## Consequences
 
 - YouTube plays without a Tune row (external ref in queue).
-- Library can grow independently of active streams.
+- One Struna can switch modules across queue entries.
+- Library can grow independently of alive streams.
 - Schema migration required from prototype.
 
 ## Alternatives considered
