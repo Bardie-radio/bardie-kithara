@@ -35,6 +35,7 @@ Inline metadata blocks: `StreamTitle='Artist - Title';`
 ## Legacy player notes
 
 - Paste full URL including query token into VLC / VRChat
+- Listen tokens are Kithara-owned Struna secrets (may appear in logs — rotate when practical)
 - Private + OIDC not supported in external players
 - Bots use service token or protected Struna with known token
 

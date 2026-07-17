@@ -4,9 +4,9 @@
 flowchart LR
   Tune[Tune Library Item]
   Queue[Queue Entry]
-  Instance[Source Instance]
-  Tune -.->|reference| Queue
-  Queue -->|play resolves| Instance
+  Job[Track job]
+  Tune -.->|optional ref| Queue
+  Queue -->|play resolves| Job
 ```
 
 A **Tune** (library item) is metadata + optional cache path for content that can be replayed (files, ytdl downloads). It is **not owned by a Struna**.
@@ -21,7 +21,7 @@ A **Tune** (library item) is metadata + optional cache path for content that can
 
 ## Queue model
 
-**QueueEntry** on a Struna holds play intent (tune ID or external ref). At play time, Neck asks the appropriate source module to `CreateInstance`.
+**QueueEntry** on a Struna holds play intent: **`module` slug + track ref** (and optional Tune id). At play time, Neck calls `StartTrack` on that source module; the module writes canonical PCM into the Struna’s session FIFO.
 
 ## Prototype artifacts
 

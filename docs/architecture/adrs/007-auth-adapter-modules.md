@@ -4,27 +4,36 @@
 
 ## Context
 
-Auth must be modular (login+password, OIDC, custom) without forcing self-hosted IdP. Options: baked into Kithara, separate auth-core container, or adapter modules.
+Auth must be modular (login+password, OIDC, custom) without forcing a self-hosted IdP for every deploy. Options: bake auth into Kithara only, a separate auth-core container, or adapter modules. Operators also want **one Bardie database** (Kithara’s); external IdPs may keep their own stores.
 
 ## Decision
 
-- **Auth orchestrator** lives **inside Kithara** (registry, discovery aggregation, token routing, service tokens).
-- **Auth adapters** are separate repos/containers (login+password for MVP; OIDC in v0.2). Module and repo names are undecided.
-- Multiple adapters attach simultaneously; discovery merges all providers.
-- **Adapter-owned login UI** — Plume delegates via `uiMode` (form_schema, embed, redirect).
-- Service tokens for bots validated in Kithara config (no adapter container).
+- **Auth Orchestrator** lives **inside Kithara** (discovery, authenticate routing, JWT issuance, service tokens, listen/guest secrets).
+- **Local password** is a built-in provider using Kithara tables (MVP).
+- **External auth adapters** (OIDC in v0.2; names TBD) are separate containers on gRPC; they do **not** own a Bardie user DB.
+- **User core + `UserAuthBinding`** in Kithara DB: thin `User` plus `(user_id, provider_slug, payload)` for provider-specific state.
+- After identity proof, **Kithara issues JWT + refresh** for API clients. Adapters do not mint the client Bearer.
+- **OIDC callback** lands on **Kithara** (Plume optional). Adapters stay off the public edge.
+- **Client-rendered UI** via discovery (`form_schema`, `redirect`) — no adapter-hosted login pages.
+- **Listen tokens and guest codes** are Struna secrets owned by Kithara (independent of which login provider is used).
+- **Explicit account linking** across providers; **provider priority tier-list** (config at start) arbitrates mapped org roles when bindings disagree.
+- Env **bootstrap admin** on empty DB; disabled when an OIDC user-provider is configured from the start.
+- Service / module **join** tokens in Kithara config.
 
 ## Consequences
 
-- No separate auth-core container (rejected alternative).
-- MVP: login+password adapter only; no external IdP required.
-- Plume never hardcodes password fields.
+- One Bardie DB; IdPs remain external for OIDC user lifecycle.
+- Same session model for local, OIDC, and bots (service tokens).
+- Plume never hardcodes password fields; stack works without Plume.
+- Struna ACLs and listen/guest secrets stay in Kithara regardless of IdP.
 
 ## Alternatives considered
 
 - **Separate auth gateway container** — rejected; 1:1 with Kithara makes core redundant.
-- **Kithara validates Zitadel JWT directly only** — rejected; limits modularity.
-- **Auth baked into Kithara** — rejected for adapter extensibility.
+- **Adapter issues client tokens / ValidateToken every request** — rejected; fights unified sessions and Plume-optional clients.
+- **Adapter-owned user database** — rejected; second Bardie DB.
+- **Adapter-hosted login HTTP** — rejected; browsers must not call modules (ADR 003).
+- **Kithara validates only raw Zitadel JWT on every API call** — rejected as sole model; still use OIDC for identity, then Kithara JWT for API.
 
 **Related:** [domains/auth-adapters.md](../domains/auth-adapters.md) · [interfaces/auth.md](../interfaces/auth.md)
 

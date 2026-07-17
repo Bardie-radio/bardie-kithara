@@ -31,14 +31,14 @@ Playback and control access are **fully independent** per Struna.
 | HTTP Basic | token as password | v0.2 eval |
 | Path segment | `/stream/lofi/abc` | v0.2 eval |
 
-Token generated at creation; owner can rotate. Query params may appear in logs — see [ADR 009](../adrs/009-struna-access-and-routing.md).
+Token generated at creation (**Kithara-owned** Struna secret); owner can rotate. Query params may appear in logs — see [ADR 009](../adrs/009-struna-access-and-routing.md).
 
 ## Control (queue / skip)
 
 | Mode | Mechanism |
 |------|-----------|
 | **private** | Authenticated users with control permission |
-| **protected** | Short **guest code** entered on `/player/{slug}` |
+| **protected** | Short **guest code** (Kithara-owned) on `/player/{slug}` |
 | **public** | **Not supported** |
 
 ## Example combinations

@@ -1,6 +1,6 @@
 # Internal Structure
 
-<!-- mermaid-source: diagrams/internal-structure.mmd -->
+<!-- mermaid-source: docs/architecture/diagrams/internal-structure.mmd -->
 ```mermaid
 flowchart TB
   subgraph inbound [Inbound]
@@ -13,9 +13,11 @@ flowchart TB
     AuthOrch[Auth Orchestrator]
     Registry[Module Registry]
     Neck[Neck Service]
+    Silence[Silence feeder]
     Persist[(Persistence)]
   end
   subgraph runtime [Per-Struna runtime]
+    FIFO[Session FIFO]
     Encoder[Struna Encoder FFmpeg]
   end
   HTTP --> API
@@ -25,8 +27,12 @@ flowchart TB
   API --> Neck
   API --> Persist
   AuthOrch --> Registry
+  AuthOrch --> Persist
   Neck --> Registry
+  Neck --> Silence
+  Silence --> FIFO
   Neck --> Encoder
+  FIFO --> Encoder
   Encoder --> StreamSrv
   Neck --> Persist
 ```
@@ -37,22 +43,40 @@ How **Kithara** is structured inside one process. Ecosystem layout (Plume, modul
 
 | Component | Responsibility |
 |-----------|----------------|
-| **REST API** | Client-facing control: Struna CRUD, play/skip/stop, now-playing, auth discovery |
+| **REST API** | Client-facing control: Struna lifecycle, play/skip/queue, auth discovery/authenticate |
 | **Stream Server** | `GET /stream/{slug}` — ICY-over-HTTP listener fan-out |
-| **Auth Orchestrator** | Aggregates adapter discovery; validates user/service tokens for API and protected streams |
-| **Module Registry** | Tracks connected source modules and auth adapters (gRPC register / heartbeat) |
-| **Neck Service** | Struna lifecycle: spawn/teardown encoders, bind source instances, wire audio into Stream Server |
-| **Struna Encoder** | Per-active-Struna FFmpeg process; reads a source-instance socket, writes encoded audio to Stream Server |
-| **Persistence** | Struna metadata, library/Tune refs, config (SQLite or Postgres) |
+| **Auth Orchestrator** | Discovery, identity routing, JWT issue/refresh, service tokens, listen/guest checks |
+| **Module Registry** | Source + auth module register / heartbeat (join secret) |
+| **Neck Service** | Alive Struna lifecycle, session FIFOs, silence feeder, `StartTrack`/`StopTrack`, wire encoders to Stream Server |
+| **Silence feeder** | Keeps FFmpeg fed when no module writer is attached |
+| **Struna Encoder** | Per-alive-Struna FFmpeg; reads session FIFO for Struna life |
+| **Persistence** | Users + bindings, Struna metadata, library/Tune refs (SQLite or Postgres) |
+
+## Target solution layout (foreshadow)
+
+Prefer **feature-first** folders and Minimal APIs ([aspnet team rules](../../../.cursor/rules/aspnet.mdc) in repo):
+
+```text
+Features/
+  Streams/      # REST + handlers
+  Auth/         # discovery, JWT, local provider
+  Modules/      # registry gRPC clients
+  Streaming/    # Stream Server, ICY
+Infrastructure/
+  Persistence/  # EF, IDbContextFactory
+  Neck/         # hosted FFmpeg supervisor + FIFO + silence
+```
+
+FFmpeg child processes **outlive HTTP requests** — own them with a hosted background supervisor, not a request-scoped service alone.
 
 ## Control vs audio
 
-| Plane | Inside Kithara | Outside (same host / network) |
-|-------|----------------|-------------------------------|
-| **Control** | API → Auth Orchestrator / Neck / Registry | gRPC to source & auth modules |
-| **Audio** | Encoder → Stream Server | Unix socket from source instance → Encoder |
+| Plane | Inside Kithara | Outside |
+|-------|----------------|---------|
+| **Control** | API → Auth / Neck / Registry | gRPC to source & auth modules |
+| **Audio** | Silence/FIFO → Encoder → Stream Server | Modules write PCM into FIFO path |
 
-HTTP is only for clients/listeners (API + streams). Module control never rides the public HTTP port — see [03-runtime-data-flow](03-runtime-data-flow.md).
+HTTP is for clients/listeners (API + streams). Module control never rides the public HTTP port — see [03-runtime-data-flow](03-runtime-data-flow.md).
 
 ## Boundaries (not inside this process)
 
@@ -60,9 +84,9 @@ HTTP is only for clients/listeners (API + streams). Module control never rides t
 |---------|----------|
 | Client modules (Plume, bots, …) | REST API |
 | Legacy players | Stream Server |
-| Source modules | Module Registry + source-instance sockets |
-| Auth adapters | Auth Orchestrator via Registry |
-| Edge reverse proxy | HTTP port only (`/api`, `/stream`) |
+| Source modules | Registry + FIFO write path |
+| External auth adapters | Auth Orchestrator via Registry |
+| Edge reverse proxy | HTTP port only (`/api`, `/stream`; OIDC callback on Kithara) |
 
 Container ports, mounts, and edge wiring: [operations/deployment](../operations/deployment.md).
 
@@ -71,6 +95,7 @@ Container ports, mounts, and edge wiring: [operations/deployment](../operations/
 - [001 Broadcast sync](../adrs/001-broadcast-sync-model.md)
 - [002 Native FFmpeg streaming](../adrs/002-kithara-native-ffmpeg-streaming.md)
 - [003 gRPC control plane](../adrs/003-grpc-control-plane.md)
+- [004 Session FIFO](../adrs/004-source-instance-socket-audio-plane.md)
 - [007 Auth adapters](../adrs/007-auth-adapter-modules.md)
 
 **Read next:** [03-runtime-data-flow.md](03-runtime-data-flow.md)

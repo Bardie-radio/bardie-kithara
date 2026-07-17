@@ -9,9 +9,11 @@ flowchart TB
     AuthOrch[Auth Orchestrator]
     Registry[Module Registry]
     Neck[Neck Service]
+    Silence[Silence feeder]
     Persist[(Persistence)]
   end
   subgraph runtime [Per-Struna runtime]
+    FIFO[Session FIFO]
     Encoder[Struna Encoder FFmpeg]
   end
   HTTP --> API
@@ -21,7 +23,11 @@ flowchart TB
   API --> Neck
   API --> Persist
   AuthOrch --> Registry
+  AuthOrch --> Persist
   Neck --> Registry
+  Neck --> Silence
+  Silence --> FIFO
   Neck --> Encoder
+  FIFO --> Encoder
   Encoder --> StreamSrv
   Neck --> Persist
