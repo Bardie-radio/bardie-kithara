@@ -28,9 +28,9 @@ flowchart TB
 
 | Provider | Shape | Role |
 |----------|-------|------|
-| **Bes** (MVP) | Container `bes` | Login+password; mints JWT; discovery `form_schema`; slug `bes` |
-| **Argus** (v0.2) | Container `argus` | OIDC; forwards IdP JWT; refresh via IdP; discovery `redirect`; slug `argus` |
-| **Hecate** (future) | Container `hecate` | WebAuthn / passkeys; mints JWT; slug `hecate` |
+| **Bes** (MVP) | Container `bes` | Login+password; mints JWT; discovery `form_schema` — deep dive: [Bes docs](https://github.com/Bardie-radio/bardie-bes/tree/main/docs/architecture) |
+| **Argus** (v0.2) | Container `argus` | OIDC; forwards IdP JWT — [planned](https://github.com/Bardie-radio/bardie-argus/blob/main/docs/architecture/01-planned-role.md) |
+| **Hecate** (future) | Container `hecate` | Passkeys — [planned](https://github.com/Bardie-radio/bardie-hecate/blob/main/docs/architecture/01-planned-role.md) |
 
 ## Client UI and public edge
 
@@ -46,13 +46,13 @@ Adapters do **not** expose a public HTTP login surface.
 
 ### Can auth stay fully behind Kithara?
 
-**Intent: yes** for the planned modules — BFF-style:
+**Intent: yes** for the planned modules — BFF-style. Summary:
 
-- **Bes** — credentials POST to Kithara → gRPC `Authenticate` → Bes returns JWT.
-- **Argus** — browser hits the IdP (external), then Kithara’s callback; Kithara → Argus `Authenticate`; Argus returns/forwards IdP JWTs; refresh later goes Argus → IdP.
-- **Hecate** — WebAuthn ceremony browser ↔ Kithara ↔ Hecate; Hecate returns JWT.
+- **Bes** — credentials POST to Kithara → gRPC `Authenticate` → Bes mints JWT ([Bes contracts](https://github.com/Bardie-radio/bardie-bes/blob/main/docs/architecture/02-contracts.md)).
+- **Argus** — IdP redirect → Kithara callback → Argus forwards IdP JWTs ([planned](https://github.com/Bardie-radio/bardie-argus/blob/main/docs/architecture/01-planned-role.md)).
+- **Hecate** — WebAuthn via Kithara ↔ Hecate; Hecate mints JWT ([planned](https://github.com/Bardie-radio/bardie-hecate/blob/main/docs/architecture/01-planned-role.md)).
 
-The only other public party in OIDC is the **IdP** itself (redirect). If a future protocol truly required a public adapter URL, that would need an explicit exception — not the default.
+The only other public party in OIDC is the **IdP** itself. Adapters do **not** expose a public HTTP login surface.
 
 ## User core + binding store
 
