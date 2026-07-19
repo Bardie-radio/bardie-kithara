@@ -20,7 +20,7 @@ The shared library caches Magpie downloads and Catbird uploads as binary blobs. 
 
 - Magpie cache-first and Catbird uploads share one coherent library.
 - Switching drivers does not rewrite Tune semantics — only config.
-- Modules need the shared storage settings (or Kithara-mediated blob IO); exact IO API is an implementation detail later.
+- Modules put/get via Kithara’s storage interface and/or discovery — no parallel `BARDIE_STORAGE_*` on Magpie/Catbird; exact IO API is an implementation detail later.
 
 ## Alternatives considered
 

@@ -19,7 +19,7 @@ Env and Compose knobs for the **Kithara container** — database, collectors, mo
 
 **User/login** JWT mint / refresh TTLs belong on the **auth module** (e.g. Bes) — Kithara only verifies those via module JWKS. Optional Kithara knobs later: JWKS cache / clock-skew tolerances.
 
-Library blobs (Magpie cache, Catbird uploads) use the storage driver above — see [storage](../domains/storage.md). Not Redis.
+Library blobs (Magpie cache, Catbird uploads) use the storage driver above on **Kithara only** — modules do not duplicate `BARDIE_STORAGE_*`; they use Kithara as storage interface/discovery. See [storage](../domains/storage.md). Not Redis.
 
 ## Module discovery
 
