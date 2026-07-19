@@ -4,10 +4,7 @@
 stateDiagram-v2
   [*] --> Alive: POST /api/streams
   Alive --> Alive: play / skip / pause / queue
-  Alive --> Stopped: stop or cleanup
-  Stopped --> [*]: slug freed
-  Alive --> [*]: delete
-  Stopped --> [*]: delete
+  Alive --> [*]: DELETE frees slug
 ```
 
 A **Struna** (stream) is a named broadcast channel managed by **Neck** inside Kithara.
@@ -22,11 +19,11 @@ A **Struna** (stream) is a named broadcast channel managed by **Neck** inside Ki
 
 **Slug rules:** lowercase alphanumeric + hyphens; unique among **alive** Strunas; reserved names blocked (`api`, `stream`, `admin`, `player`, … — see [configuration](../operations/configuration.md)); HTTP 409 on conflict.
 
-**Alive from create:** `POST /api/streams` reserves the slug and starts FFmpeg + session FIFO (silence until the first track). Owner **stop** (or silent **cleanup**) frees the slug.
+**Alive from create:** `POST /api/streams` reserves the slug and starts FFmpeg + session FIFO (silence until the first track). **DELETE** (or silent **cleanup**) tears down the encoder and **frees the slug** — there is no separate stop endpoint.
 
 ## Neck service responsibilities
 
-1. Start FFmpeg once per alive Struna; keep it running until stop
+1. Start FFmpeg once per alive Struna; keep it running until delete/cleanup
 2. Own the per-Struna **session FIFO**; feed silence when no module is writing
 3. `StartTrack` / `StopTrack` on source modules (multi-source via module slug)
 4. Register Stream Server endpoint `/stream/{slug}`
@@ -39,13 +36,13 @@ Neck lives **inside Kithara** — not a separate container. FFmpeg process owner
 
 - `PlaybackAccess`: public | protected | private
 - `ControlAccess`: private | protected
-- `ListenToken`, `GuestCode` (nullable; owned by Kithara)
+- `ListenToken`, `GuestCode` (nullable; owned by Kithara) — guest code is exchange-only; API control uses guest control JWT
 - `EncodeMode`: compatibility | quality (listener encode profile)
 - Active track job + queue entries (`module` slug + track ref; Tune optional)
 
 ## Cleanup (planned)
 
-Operator-configurable: auto-**stop** Strunas that stay silent longer than a threshold (frees slug).
+Operator-configurable: auto-**delete** Strunas that stay silent longer than a threshold (frees slug).
 
 **Related:** [domains/struna-access.md](struna-access.md) · [ADR 006](../adrs/006-stream-source-tune-data-model.md) · [domains/source-instances.md](source-instances.md)
 

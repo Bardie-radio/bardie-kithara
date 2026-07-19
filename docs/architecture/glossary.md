@@ -12,19 +12,35 @@ Dual naming: **codename** (musical instruments theme) + **plain English**. When 
 | **Track job** | Decode / playback job | Ephemeral source-module work writing PCM for one queue item |
 | **Stream Server** | ICY HTTP output | Serves `GET /stream/{slug}` to listeners |
 | **ICY** / **ICY-over-HTTP** | Shoutcast-style metadata stream | Continuous HTTP audio with in-band `StreamTitle` / `icy-metaint` metadata |
-| **Tune** | Library item | Cached/metadata reference for file or ytdl content; not stream-owned |
+| **Tune** | Library item | Cached/metadata reference for file or ytdl content; blob via opaque storage key; not stream-owned |
 | **QueueEntry** | Queue item | Play intent: module slug + track ref (optional Tune id) |
-| **Plume** | Web UI client module | Optional client: `/`, `/player/{slug}` |
-| **Client module** | User-facing integration | Deployable surface (Plume, Discord bot, …) that calls Kithara REST |
-| **Source module** | Audio provider | External container (YouTube, file, …) registered with Kithara |
-| **Module Registry** | Module directory | Inside Kithara: source modules and auth adapters |
-| **Auth adapter / provider** | Auth provider | Local (built-in) or external container (OIDC); names TBD |
-| **Auth orchestrator** | Auth router | Discovery, identity routing, JWT issue, service tokens |
+| **Plume** | Web UI client module | Optional **user-aware** client: `/`, `/player/{slug}` |
+| **Beak** | Discord bot client | Future **static** client: play Strunas in Discord voice; guild-scoped managed users |
+| **Cauda** | Telegram bot client | Future **user-aware** client: remote Struna control from Telegram chats |
+| **Client module** | User-facing integration | Deployable surface (Plume, Beak, Cauda, …) that calls Kithara REST |
+| **User-aware client** | Login UI module | Client whose end users authenticate with JWT from an auth module (Plume, Cauda) |
+| **Static client** | Bot / keyed UI module | Client with no human Bardie login; uses a **join secret** plus **module-managed users** with per-user credentials (Beak) |
+| **Module-managed user** | Bot-owned user | Persistent `User` owned by a static client (e.g. one per Discord guild for Beak) |
+| **Magpie** | YouTube / ytdl source | MVP: search + play via ytdl; cache-first Tune library; writes PCM to session FIFO |
+| **Starling** | External / local stream source | Future: re-broadcast direct audio input |
+| **Catbird** | Local file source | Future: play uploaded / local audio files |
+| **Source module** | Audio provider | External container (Magpie, Starling, Catbird, …) registered with Kithara |
+| **Module Registry** | Module directory | Inside Kithara: source, auth, and client module registration |
+| **Bes** | Login + password auth | MVP auth adapter: username/password proof over gRPC |
+| **Argus** | OIDC auth adapter | v0.2: IdP redirect/code exchange, IdP tokens / OIDC session pieces |
+| **Hecate** | Passkeys auth adapter | Future: WebAuthn / passkey ceremonies |
+| **Auth adapter / provider** | Auth provider | Separate container (Bes, Argus, Hecate, …); issues/forwards JWT + refresh; Kithara verifies + user DB |
+| **Auth orchestrator** | Auth router | Discovery merge, opaque Authenticate/Refresh routing, user JWT verify (JWKS), guest-code exchange + guest JWT mint/verify, join secrets |
 | **UserAuthBinding** | Provider binding | `(user, provider_slug)` row + payload in Kithara DB |
 | **Listen token** | Playback secret | Query credential for **protected** playback (Kithara-owned) |
-| **Guest code** | Control share code | Short code for **protected** control (Kithara-owned) |
-| **Service token** / **join secret** | Bot / module credential | Long-lived secrets in Kithara/Compose config |
+| **Guest code** | Control bootstrap | Short Kithara-owned code; **exchange only** for a guest control JWT (rate-limited) |
+| **Guest control JWT** | Capability token | Kithara-signed Bearer for protected Struna control (`struna_id` + `stream:control`); not a User |
+| **Join secret** | Module credential | Long-lived secret in Kithara/Compose config — registers source/auth/client modules and (for static clients) administers module-managed users. One credential class (not a separate “bot token”). |
+| **Blob storage** | Library object store | Kithara-owned pluggable backend for Tune bytes (local volume, S3-compatible, WebDAV later) |
+| **Storage key** | Opaque blob id | Durable pointer on a Tune; drivers resolve to file/object — not a host path |
 | **DbProvider** | Persistence backend | Config switch: `sqlite` or `postgres` |
+
+Module and provider registration slugs are the lowercase codename (`magpie`, `bes`, `argus`, …). Image/Compose names use the same slug. OTel `service.name` uses `bardie.kithara`, `bardie.plume`, `bardie.beak`, `bardie.cauda`, `bardie.source.<slug>`, `bardie.auth.<slug>`.
 
 ## Prototype vs target
 

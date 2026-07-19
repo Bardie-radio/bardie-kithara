@@ -1,11 +1,54 @@
 flowchart TB
-  subgraph control [Control Plane gRPC]
-    API -->|StartTrack| SrcMod[Source Module]
-    API -->|Authenticate| AuthMod[Auth Provider]
+  IdP["OIDC / other IdP"]
+  Media["External media / live audio"]
+  DB[(Database)]
+  OTel[OTel collector]
+  Players[Legacy players]
+
+  subgraph modules [Bardie modules]
+    UI[UI client]
+    Auth[Auth module]
+    Src[Source module]
   end
-  subgraph audio [Audio Plane FIFO]
-    SrcMod -->|PCM write| FIFO[Session FIFO]
-    Silence[Silence feeder] --> FIFO
-    FIFO --> FF[FFmpeg]
-    FF -->|pipe| SS[Stream Server]
+
+  subgraph kithara [Kithara]
+    API[REST API]
+    AuthOrch[Auth Orchestrator]
+    Registry[Module Registry]
+    Neck[Neck]
+    Silence[Silence feeder]
+    FIFO[Session FIFO]
+    Encoder[Struna Encoder]
+    StreamSrv[Stream Server]
   end
+
+  UI -->|REST /api| API
+  Players -->|ICY /stream| StreamSrv
+  UI -.->|optional listen| StreamSrv
+
+  API --> AuthOrch
+  API --> Neck
+  API --> DB
+  AuthOrch --> DB
+  Neck --> DB
+  AuthOrch --> Registry
+  Neck --> Registry
+  Neck --> Silence
+  Silence --> FIFO
+  Neck --> Encoder
+  FIFO --> Encoder
+  Encoder -->|encoded pipe| StreamSrv
+
+  AuthOrch <-->|gRPC Authenticate Refresh| Auth
+  Auth -.->|optional adapter hop| IdP
+  UI -.->|browser redirect| IdP
+  IdP -.->|OIDC callback| API
+
+  Neck <-->|gRPC StartTrack Search| Src
+  Src -->|PCM write| FIFO
+  Src -.->|optional fetch or live input| Media
+
+  API -.->|OTLP| OTel
+  Auth -.->|OTLP| OTel
+  Src -.->|OTLP| OTel
+  UI -.->|OTLP| OTel

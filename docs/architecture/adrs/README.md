@@ -11,5 +11,6 @@
 | [007](007-auth-adapter-modules.md) | Auth adapter modules |
 | [008](008-otel-observability.md) | OpenTelemetry observability |
 | [009](009-struna-access-and-routing.md) | Struna access and routing |
+| [010](010-blob-storage-backends.md) | Blob storage backends |
 
 Template: Status, Context, Decision, Consequences, Alternatives considered.

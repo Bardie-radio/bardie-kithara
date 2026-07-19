@@ -10,7 +10,7 @@ sequenceDiagram
 
   API->>Neck: Struna create alive
   Neck->>FF: start once on session FIFO
-  API->>Neck: play YouTube entry
+  API->>Neck: play Magpie entry
   Neck->>ModA: StartTrack fifoPath trackRef
   ModA-->>FF: PCM into FIFO
   Note over Neck,ModA: Queue shift — kill decoder only
@@ -18,12 +18,13 @@ sequenceDiagram
   API->>Neck: play other module entry
   Neck->>ModB: StartTrack same FIFO
   ModB-->>FF: PCM into same FIFO
-  API->>Neck: owner Stop
-  Neck->>FF: kill
+  API->>Neck: owner Delete
+  Note over Neck,ModB: Stop writer before tearing down FIFO
   Neck->>ModB: StopTrack
+  Neck->>FF: kill
 ```
 
-Audio for a Struna uses a **long-lived session** (FFmpeg + Kithara-owned FIFO) and short-lived **track jobs** on source modules. Different modules can take turns on one Struna.
+Audio for a Struna uses a **long-lived session** (FFmpeg + Kithara-owned FIFO) and short-lived **track jobs** on source modules. Different modules can take turns on one Struna. On teardown, Neck **stops the track job first**, then kills FFmpeg / closes the FIFO so the source never writes into a gone socket.
 
 ## Lifetimes
 

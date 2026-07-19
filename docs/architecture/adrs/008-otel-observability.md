@@ -11,12 +11,18 @@ Bardie is modular — when something breaks, you need the full path across Kitha
 **Everything is under coverage.** Every component exports OTLP traces, metrics, and logs:
 
 - Kithara (API, Neck, Stream Server, auth orchestrator)
-- Plume (client-facing)
-- Source modules
-- Auth adapter modules
-- Future bots
+- Plume, Beak, Cauda (clients)
+- Source modules (Magpie, Starling, Catbird, …)
+- Auth adapter modules (Bes, Argus, Hecate, …)
 
-W3C `traceparent` propagated across HTTP and gRPC. Service names: `bardie.kithara`, `bardie.plume`, `bardie.auth.*`, `bardie.source.*` (exact module suffixes follow chosen module names).
+W3C `traceparent` propagated across HTTP and gRPC. Service names:
+
+| Component | `service.name` |
+|-----------|----------------|
+| Kithara | `bardie.kithara` |
+| Plume / Beak / Cauda | `bardie.plume`, `bardie.beak`, `bardie.cauda` |
+| Sources | `bardie.source.<slug>` (e.g. `bardie.source.magpie`) |
+| Auth | `bardie.auth.<slug>` (e.g. `bardie.auth.bes`) |
 
 ## Consequences
 
@@ -30,8 +36,9 @@ W3C `traceparent` propagated across HTTP and gRPC. Service names: `bardie.kithar
 | Service name | Follow up in |
 |--------------|----------------|
 | `bardie.plume` | **bardie-plume** |
-| `bardie.source.*` | Source module repos |
-| `bardie.auth.*` | Auth adapter repos (login+password MVP name/repo TBD) |
+| `bardie.beak` / `bardie.cauda` | **bardie-beak**, **bardie-cauda** |
+| `bardie.source.*` | **bardie-magpie**, **bardie-starling**, **bardie-catbird** |
+| `bardie.auth.*` | **bardie-bes**, **bardie-argus**, **bardie-hecate** |
 | Collector wiring | Org Compose / [05-deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md) |
 
 ## Alternatives considered

@@ -37,7 +37,7 @@ Inline metadata blocks: `StreamTitle='Artist - Title';`
 - Paste full URL including query token into VLC / VRChat
 - Listen tokens are Kithara-owned Struna secrets (may appear in logs — rotate when practical)
 - Private + OIDC not supported in external players
-- Bots use service token or protected Struna with known token
+- Static bots (Beak) use module-managed user credentials or protected Struna with known token
 
 **Related:** [domains/struna-access.md](../domains/struna-access.md) · [ADR 002](../adrs/002-kithara-native-ffmpeg-streaming.md)
 

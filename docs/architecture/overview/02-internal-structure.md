@@ -45,8 +45,8 @@ How **Kithara** is structured inside one process. Ecosystem layout (Plume, modul
 |-----------|----------------|
 | **REST API** | Client-facing control: Struna lifecycle, play/skip/queue, auth discovery/authenticate |
 | **Stream Server** | `GET /stream/{slug}` — ICY-over-HTTP listener fan-out |
-| **Auth Orchestrator** | Discovery, identity routing, JWT issue/refresh, service tokens, listen/guest checks |
-| **Module Registry** | Source + auth module register / heartbeat (join secret) |
+| **Auth Orchestrator** | Discovery, identity routing, user JWT verify (JWKS), guest-code exchange + guest JWT mint/verify, refresh proxy to modules, join secrets, listen checks |
+| **Module Registry** | Source + auth + client module register / heartbeat (join secret) |
 | **Neck Service** | Alive Struna lifecycle, session FIFOs, silence feeder, `StartTrack`/`StopTrack`, wire encoders to Stream Server |
 | **Silence feeder** | Keeps FFmpeg fed when no module writer is attached |
 | **Struna Encoder** | Per-alive-Struna FFmpeg; reads session FIFO for Struna life |

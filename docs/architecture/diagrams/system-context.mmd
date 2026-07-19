@@ -1,22 +1,32 @@
 flowchart TB
-  subgraph users [Users]
-    Listener[Listener]
-    DJ[DJ / Owner]
-  end
+  Listener[Listener]
+  DJ[DJ / Owner]
+
   subgraph bardie [Bardie]
     Kithara[Kithara]
-    Clients[Client Modules]
-    Src[Source Modules]
-    Auth[Auth Adapters]
+    Clients[Client modules]
+    Src[Source modules]
+    Auth[Auth modules]
   end
-  subgraph external [External]
-    Players[Player]
-    OTel[OTel Collector]
-  end
+
+  Players[Legacy players]
+  IdP["OIDC / other IdP"]
+  DB[(Database)]
+  Media["External media / live audio"]
+  OTel[OTel collector]
+
   DJ --> Clients
   Listener --> Players
-  Clients --> Kithara
-  Players --> Kithara
-  Kithara --> Src
-  Kithara --> Auth
-  bardie --> OTel
+  Listener -.->|optional UI listen| Clients
+  Clients -->|REST /api| Kithara
+  Players -->|ICY /stream| Kithara
+  Kithara -->|gRPC| Src
+  Kithara -->|gRPC| Auth
+  Kithara --> DB
+  Auth -.->|optional e.g. Argus| IdP
+  Clients -.->|browser redirect| IdP
+  Src -.->|optional fetch or live input| Media
+  Kithara -.->|OTLP| OTel
+  Clients -.->|OTLP| OTel
+  Src -.->|OTLP| OTel
+  Auth -.->|OTLP| OTel

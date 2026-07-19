@@ -9,7 +9,7 @@ Audio must flow from source modules to Kithara encoders without restarting FFmpe
 ## Decision
 
 - Each **alive** Struna has one **session FIFO** owned by Kithara/Neck.
-- **FFmpeg** reads that FIFO for the entire Struna life (until owner stop / cleanup).
+- **FFmpeg** reads that FIFO for the entire Struna life (until DELETE / cleanup).
 - Source modules run **track jobs**: `StartTrack` receives the FIFO path and writes **canonical PCM**; `StopTrack` ends the job.
 - Queue shifts **kill/restart the decoder job only** — not FFmpeg. Different modules may write in turn (multi-source Struna).
 - When no writer is attached, Neck feeds **silence** into the FIFO.
