@@ -6,16 +6,17 @@ Auth modules plug into Kithara’s **Auth Orchestrator** over one shared gRPC co
 
 | Layer | Owns |
 |-------|------|
-| **Auth module** (Bes, Argus, Hecate, …) | Authenticate/verify; **issue or forward JWTs**; **refresh** (Argus → IdP; others mint their own); return allow + rights/entities; optional “store this user/binding” |
-| **Kithara** | Sole user DB; **verify** user JWTs via module JWKS; **mint/verify guest control JWTs**; listen/guest secrets; **join secrets**; merge discovery; route opaque auth/refresh payloads |
+| **Auth module** (Bes, Argus, Hecate, …) | Authenticate/verify; **issue or forward login JWTs**; **refresh** (Argus → IdP; others mint their own); return allow + rights/entities; optional “store this user/binding”; optional **`SeedAdmin`** when capability advertised |
+| **Kithara** | Sole user DB; **verify** login JWTs via module JWKS; **mint/verify ephemeral guest JWTs**; listen/guest secrets; **join secrets**; merge discovery; route opaque auth/refresh; orchestrate `seedAdmin` |
 
-Everything user-facing for **login** uses the **same JWT protocol** from auth modules. Argus typically **passes through** OIDC tokens; Bes/Hecate **forge** their own JWTs. Kithara does not mint user access tokens — it may mint Struna-scoped **guest control JWTs** after guest-code exchange.
+Everything user-facing for **login** uses the **same JWT protocol** from auth modules. Argus typically **passes through** OIDC tokens; Bes/Hecate **forge** their own JWTs. Kithara does not mint login access tokens — it mints JWTs only for **ephemeral guest users** after guest-code exchange.
+
 
 ```mermaid
 flowchart TB
   Client -->|discovery / authenticate / refresh| Kithara
   Kithara --> DB[(User + UserAuthBinding)]
-  Kithara -->|"GetProviders / Authenticate / Refresh"| AuthBox
+  Kithara -->|"GetProviders / Authenticate / Refresh / SeedAdmin"| AuthBox
   subgraph AuthBox [Auth adapters — shared gRPC]
     Bes[Bes]
     Argus[Argus]
@@ -74,7 +75,13 @@ UserAuthBinding
 
 First successful login can JIT-provision a `User` + binding when the module asks Kithara to store the user.
 
-**First admin / empty DB:** operator-controlled user creation (typical for Bes deploys) — not a Kithara container env knob. Usually unused when only Argus is deployed (admins come from the IdP). Details live with user management, not [configuration](../operations/configuration.md).
+User **kinds** (durable / managed / ephemeral guest) — [glossary](../glossary.md). Ephemeral guests have no `UserAuthBinding`.
+
+### First admin / empty DB (`seedAdmin`)
+
+Auth modules **advertise capabilities** at Registry join. Modules that can invent local users (Bes) advertise `seedAdmin`. Modules that only reflect remote IdPs (Argus) typically do not.
+
+When the DB is empty, Kithara calls `SeedAdmin` on a capable adapter. The module creates an admin with a random secret, Kithara persists the user + binding, and Kithara logs the module’s welcome text (credentials) to the **Kithara container log**. Seeded admins must rotate credentials on first login (`must_rotate_credentials`). Privileged RPC — only Kithara may invoke it. Details: [grpc-auth-adapter](../interfaces/grpc-auth-adapter.md).
 
 ## Account linking
 

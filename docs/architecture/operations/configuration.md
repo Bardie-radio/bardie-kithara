@@ -12,7 +12,10 @@ Env and Compose knobs for the **Kithara container** — database, collectors, mo
 | `BARDIE_JOIN_SECRETS` | Map of module slug → secret (source, auth, and client modules — register + static admin) |
 | `BARDIE_AUTH_PROVIDER_PRIORITY` | Ordered provider slugs for claim/role arbitration |
 | `BARDIE_STRUNA_SILENCE_CLEANUP` | Auto-delete after silent duration (planned) |
-| `BARDIE_GUEST_JWT_*` | Guest control JWT signing / TTL (Kithara-minted capability tokens; defaults TBD) |
+| `BARDIE_GUEST_JWT_SIGNING_KEY` | Optional. If set, Kithara uses this key to sign ephemeral guest JWTs. If unset, auto-generate on first boot and persist on the data volume |
+| `BARDIE_GUEST_JWT_ACCESS_TTL` | Access-token lifetime for ephemeral guests (default ~15m) |
+| `BARDIE_GUEST_JWT_REFRESH_*` | Refresh window for ephemeral guests (until Struna teardown / capped lifetime — sketch) |
+| `BARDIE_SEARCH_CACHE_TTL` | Timeout for durable/managed search-result cache (guests clear on Struna teardown) |
 | `BARDIE_STORAGE_DRIVER` | Blob backend: `local` (MVP default) \| `s3` \| later `webdav` |
 | `BARDIE_STORAGE_PATH` | Local driver root (volume or NFS/SMB mount) |
 | `BARDIE_STORAGE_S3_*` | S3-compatible endpoint, bucket, region, credentials (sketch) |

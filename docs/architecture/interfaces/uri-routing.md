@@ -18,7 +18,7 @@ flowchart TB
 |------|--------|------|
 | `/` | Plume (optional) | Auth required when Plume is used |
 | `/player/{slug}` | Plume (optional) | Per Struna control mode |
-| `/api/*` | Kithara REST (incl. auth + `…/guest/exchange`) | User JWT; guest control JWT; join secret only for static-module admin |
+| `/api/*` | Kithara REST (incl. auth + `…/guest/exchange` + global search) | Login JWT; ephemeral guest JWT; join secret only for static-module admin |
 | `/stream/{slug}` | Kithara Stream Server | Per Struna playback mode |
 
 gRPC (`:5000`) is **not** on this map — modules reach Kithara on the internal network only. Auth adapters are never public edge targets.

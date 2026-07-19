@@ -36,9 +36,10 @@ Neck lives **inside Kithara** — not a separate container. FFmpeg process owner
 
 - `PlaybackAccess`: public | protected | private
 - `ControlAccess`: private | protected
-- `ListenToken`, `GuestCode` (nullable; owned by Kithara) — guest code is exchange-only; API control uses guest control JWT
-- `EncodeMode`: compatibility | quality (listener encode profile)
-- Active track job + queue entries (`module` slug + track ref; Tune optional)
+- `OwnerUserId` + grant list for private control ([auth ACL](../interfaces/auth.md))
+- `ListenToken`, `GuestCode` (nullable; owned by Kithara) — guest code is exchange-only; each exchange creates an ephemeral guest user + JWT
+- Active track job + queue entries (**Tune id** per slot; module resolved from Tune)
+- Listener encode quality is **operator/FFmpeg config** for MVP
 
 ## Cleanup (planned)
 

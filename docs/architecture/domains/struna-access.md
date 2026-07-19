@@ -37,13 +37,17 @@ Token generated at creation (**Kithara-owned** Struna secret); owner can rotate.
 
 | Mode | Mechanism |
 |------|-----------|
-| **private** | Authenticated users with control permission (user/login JWT or static per-user credentials) |
-| **protected** | Short **guest code** exchanged once for a **guest control JWT** (Bearer) |
+| **private** | Authenticated **durable** or **managed** users with control permission |
+| **protected** | Short **guest code** → Kithara creates an **ephemeral guest user** + mints JWTs for that user |
 | **public** | **Not supported** |
 
-### Protected control: guest code → guest JWT
+### Protected control: guest code → ephemeral guest user
 
 Do **not** send the short guest code on every API call — it is brute-forceable and sticky in logs/history.
+
+One guest code is generated **per Struna** (owner can rotate). Each successful exchange creates a **new ephemeral guest user** bound to that Struna. Kithara **mints** access (+ refresh) JWTs for that user. When the Struna is deleted/cleaned up, Kithara destroys all ephemeral guest users created for that Struna.
+
+**Rotating** the guest code **only blocks new joins**. Existing ephemeral guests keep their sessions until the Struna is deleted (or their JWT refresh window ends without a valid path — still tied to Struna life for destruction of the user row).
 
 ```mermaid
 sequenceDiagram
@@ -53,19 +57,22 @@ sequenceDiagram
   Guest->>Client: enters short guest code
   Client->>Kithara: POST guest/exchange
   Note over Kithara: rate-limit verify code
-  Kithara-->>Client: Bearer guest JWT
+  Note over Kithara: create ephemeral guest user for this joiner
+  Kithara-->>Client: Bearer JWT + refresh for that user
   Client->>Kithara: play queue skip with Bearer
-  Note over Kithara: verify guest JWT locally
+  Note over Kithara: verify Kithara-minted JWT; ACL = this Struna
+  Note over Kithara: on Struna DELETE — destroy ephemeral guests
 ```
 
 | Piece | Role |
 |-------|------|
-| **Guest code** | Short, human-shareable, Kithara-owned; used **only** at exchange (rate-limited) |
-| **Guest control JWT** | Kithara-signed capability token (`iss=kithara`, `struna_id`, `scope` ≈ `stream:control`, `exp`, optional `jti`); Bearer on control endpoints for **that Struna only** |
+| **Guest code** | Short, human-shareable, Kithara-owned; used **only** at exchange (rate-limited); one per Struna until rotated |
+| **Ephemeral guest user** | Kithara-owned `User` row (no auth-module binding); one **per joiner**; destroyed with the Struna |
+| **Guest JWT (+ refresh)** | Kithara-signed credentials for that ephemeral user; refreshable until Struna teardown |
 
-Guests are **not** Users — no auth-module binding. Party DJ is a capability grant, not an account.
+Party DJ is still not a durable account — but it **is** a real row in Kithara’s user table for ACL, search-cache ownership, and refresh. See [glossary](../glossary.md) for naming vs **managed users**.
 
-**Security:** rate-limit exchange; short JWT TTL; owner **rotates** the guest code (bump epoch / invalidate outstanding guest JWTs). Endpoint: [rest-api](../interfaces/rest-api.md).
+**Security:** rate-limit exchange; JWT TTL + refresh; owner **rotates** the guest code to stop **new** joiners (existing guests unaffected until Struna delete). Endpoint: [rest-api](../interfaces/rest-api.md).
 
 ## Example combinations
 
@@ -78,7 +85,7 @@ Guests are **not** Users — no auth-module binding. Party DJ is a capability gr
 
 ## Bots / static clients
 
-**Module-managed user** credentials (day-to-day control) plus module **join secret** for admin only — see [clients](clients.md). For listen-only bots, a **protected** Struna with a known listen token also works.
+**Managed users** (day-to-day control) plus module **join secret** for admin only — see [clients](clients.md). For listen-only bots, a **protected** Struna with a known listen token also works.
 
 **Related:** [interfaces/http-stream-output.md](../interfaces/http-stream-output.md) · [interfaces/auth.md](../interfaces/auth.md) · [ADR 009](../adrs/009-struna-access-and-routing.md)
 

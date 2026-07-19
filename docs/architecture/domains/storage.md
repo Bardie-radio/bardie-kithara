@@ -54,7 +54,11 @@ See [configuration](../operations/configuration.md) and [ADR 010](../adrs/010-bl
 
 ## Access pattern
 
-Modules put/get (or stream) by storage key via Kithara’s storage interface/discovery. Docs lock **Kithara-configured shared backend + opaque keys** — not per-module independent buckets or duplicated driver env on Magpie/Catbird, and not a new public path for raw library files.
+Modules **dial Kithara** and put/get (stream) by storage key through a **thin storage RPC/API on Kithara**. Kithara’s driver interface (local / S3 / …) is the only place that knows the backend. Keep that hop as thin as practical — library writes are bulky; avoid extra copies and chatty round-trips where the driver allows.
+
+Docs lock **Kithara-configured shared backend + opaque keys + module→Kithara storage calls** — not per-module independent buckets or duplicated `BARDIE_STORAGE_*` on Magpie/Catbird, and not a new public path for raw library files.
+
+Exact streaming RPC shapes land with Phase 0 proto freeze.
 
 **Related:** [library-and-tunes.md](library-and-tunes.md) · [ADR 006](../adrs/006-stream-source-tune-data-model.md) · [ADR 010](../adrs/010-blob-storage-backends.md) · [operations/deployment.md](../operations/deployment.md)
 

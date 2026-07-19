@@ -14,7 +14,7 @@ flowchart TB
 
 ## What counts as a client module
 
-A **client module** is a separate deployable that presents Bardie on some channel (web, chat, bot, …) and drives Strunas through Kithara’s **REST API**. It registers (or is expected to) with a join secret and an auth mode, calls `/api` for create/control/search/queue, and may provide player capabilities
+A **client module** is a separate deployable that presents Bardie on some channel (web, chat, bot, …) and drives Strunas through Kithara’s **REST API**. It **Registers over gRPC** like every other module (join secret + auth mode), calls `/api` for create/control/search/queue, and may provide player surfaces.
 
 Out of scope for “client module”: legacy players (VLC, direct browser playback, etc) that only hit `GET /stream/{slug}`, no control over system or authorization in most cases
 
@@ -45,16 +45,17 @@ Do **not**:
 | Many users all acting under the **same** join secret      | Shared-secret impersonation          |
 
 
-**Chosen shape:** join secret for **module admin** (create/list/revoke managed users); each **tenancy boundary** gets a durable `User` with **distinct** credentials for day-to-day `/api`. Kithara records `managed_by_module` + external tenancy ref. Concrete tenancy keys (e.g. Discord guild) are module-specific — see [org catalog](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/06-client-modules.md) and each module’s docs.
+**Chosen shape:** join secret for **module admin** (create/list/revoke managed users); each **tenancy boundary** gets a durable `User` with **distinct** credentials for day-to-day `/api`. Kithara records `managed_by_module` + external tenancy ref. At Register the static module advertises a **permission ceiling** (typical: create Strunas + manage ones it created). Creating a managed user may set a narrower entity scope or adjust it at runtime — never above the ceiling; if unset, Kithara defaults to the advertised set. Concrete tenancy keys (e.g. Discord guild) are module-specific — see [org catalog](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/06-client-modules.md) and each module’s docs.
 
 ## Attachment to core
 
-1. **Register** — join secret + auth mode (`user-aware`  `static`) + static module rights when static (REST or thin join RPC — sketch)
-2. **Auth** — user JWT; or join secret for managed-user admin + per-user credentials for API work
+1. **Register** — gRPC Module Registry (same as source/auth): join secret + `kind=CLIENT` + auth mode (`user-aware` | `static`) + static module rights when static — [grpc-module-registry](../interfaces/grpc-module-registry.md)
+2. **Auth** — user JWT; or join secret for managed-user admin + per-user credentials for API work; or ephemeral guest JWT after guest exchange
 3. **Control** — REST playback/queue/search as in [rest-api](../interfaces/rest-api.md)
 4. **Listen** — optional; `/stream/{slug}` (or embed). Not required to be a client module
 
-Day-to-day control is **REST only** (no source/auth gRPC from the client). Compose / join-secret wiring: [org deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md) · [operations/deployment](../operations/deployment.md).
+Day-to-day control is **REST only** (no source/auth work gRPC from the client process). Join is **always** Registry RPC. Compose / join-secret wiring: [org deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md) · [operations/deployment](../operations/deployment.md).
+
 
 ## OTel
 

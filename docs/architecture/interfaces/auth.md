@@ -2,14 +2,15 @@
 
 Clients authenticate through **Kithara**, not by calling auth adapters on the public edge. Plume is optional — any client can use the same REST flow. Adapters stay on the internal gRPC plane.
 
-**Token model (two JWT classes):**
+**Token model:**
 
 | Class | Who mints | Who verifies | Use |
 |-------|-----------|--------------|-----|
-| **User / login JWT** (+ refresh) | Auth module (issue or forward) | Kithara via module JWKS | Logged-in API clients |
-| **Guest control JWT** | **Kithara** | Kithara via its own signing key | Protected Struna control after guest-code exchange |
+| **Login JWT** (+ refresh) | Auth module (issue or forward) | Kithara via module JWKS | Durable users (Bes/Argus/…) |
+| **Ephemeral guest JWT** (+ refresh) | **Kithara** | Kithara via its signing key | Guest-code joiners on a protected-control Struna |
+| **Managed-user credentials** | Static client admin flow (join secret) | Kithara | Beak-style tenancy users |
 
-Kithara does **not** mint user/login JWTs. It **may** mint Struna-scoped guest capability JWTs. **Join secrets** authenticate modules (register + static admin) — not end-user credentials.
+Kithara does **not** mint auth-module **login** JWTs. It **does** mint JWTs for **ephemeral guest users** after guest-code exchange. **Join secrets** authenticate modules (register + static admin) — not end-user credentials.
 
 ```mermaid
 sequenceDiagram
@@ -26,7 +27,7 @@ sequenceDiagram
   Adapter-->>Kithara: allowed + roles + access_jwt + refresh
   Note over Kithara: ensure User/binding if asked
   Kithara-->>Client: access JWT + refresh (from module)
-  Client->>Kithara: API call Bearer user JWT
+  Client->>Kithara: API call Bearer login JWT
   Note over Kithara: Verify JWT via module JWKS
   Client->>Kithara: POST /api/auth/refresh
   Kithara->>Adapter: Refresh
@@ -39,7 +40,7 @@ sequenceDiagram
 
 MVP: one `form_schema` provider from **Bes**. Client (e.g. Plume) renders fields from discovery — adapters do **not** host login HTML.
 
-Redirect-style providers (Argus) advertise an authorize URL. The browser returns to **Kithara**, not to Plume or the adapter. Kithara forwards the opaque callback payload to that adapter’s `Authenticate`.
+Redirect-style providers (Argus) advertise an authorize URL. The browser returns to **Kithara**, not to Plume or the adapter. Kithara forwards the opaque callback payload to that adapter’s `Authenticate`. Path: `/api/auth/callback` under `/api/*` (no separate public `/auth` prefix for MVP).
 
 ## Authenticate, refresh, and API access
 
@@ -49,10 +50,16 @@ Redirect-style providers (Argus) advertise an authorize URL. The browser returns
 | POST | `/api/auth/refresh` | Opaque refresh → module `Refresh` (e.g. Argus → IdP); returns new JWT + refresh |
 | GET/POST | `/api/auth/callback` | Browser return for redirect flows; same path as authenticate — **not** OIDC-named |
 
-Kithara does not mint user JWTs and does not interpret provider-specific crypto beyond verifying signatures with the module’s registered JWKS. It routes the bag, persists binding data when asked, and enforces Struna ACLs using claims/roles from the verified JWT (plus DB).
+Kithara does not mint login JWTs and does not interpret provider-specific crypto beyond verifying signatures with the module’s registered JWKS. It routes the bag, persists binding data when asked, and enforces Struna ACLs using claims/roles from the verified JWT (plus DB).
 
-- **Refresh** is entirely on the auth-module side (Argus refreshes through the external OIDC provider; Bes/Hecate refresh with their own issuer logic).
-- Revoke / logout: module- and IdP-dependent; Kithara may optionally denylist `jti` for emergencies.
+- **Refresh (login):** entirely on the auth-module side.
+- **Refresh (ephemeral guest):** Kithara-local for that guest user until Struna teardown.
+- Revoke / logout: module- and IdP-dependent for login users; guests die with the Struna. Rotating the guest code **does not** kill existing guests — it only blocks new exchanges.
+- **`must_rotate_credentials`:** seeded admins must change creds on first login; optional force-rotate for any durable user later.
+
+## Bootstrap admin (`seedAdmin`)
+
+When the user DB is empty, Kithara may call `SeedAdmin` on an auth module that advertised the `seedAdmin` capability (Bes). The module creates credentials, Kithara persists the user, and Kithara logs the module’s welcome text (one-time secret) to the **Kithara container log**. See [grpc-auth-adapter](grpc-auth-adapter.md).
 
 ## Guest control (protected Struna)
 
@@ -60,52 +67,74 @@ Short **guest codes** are Kithara-owned bootstrap secrets — **exchange only**,
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/streams/{id}/guest/exchange` | Body: guest code → **Kithara-signed guest control JWT** |
+| POST | `/api/streams/{id}/guest/exchange` | Body: guest code → create **ephemeral guest user** + Kithara-signed JWT (+ refresh) |
 
-Guest JWT claims (sketch): `iss=kithara`, `struna_id`, `scope` ≈ `stream:control`, `exp`, optional `jti`. Bearer on subsequent control endpoints for **that Struna only**. Not a `User` — no auth-module binding. See [struna-access](../domains/struna-access.md).
+Each exchange = **one new ephemeral guest user** for that joiner, scoped to the Struna. Destroyed when the Struna is deleted. Details: [struna-access](../domains/struna-access.md).
 
 ## Secrets ownership
 
 | Secret | Owner | Purpose |
 |--------|-------|---------|
-| User access JWT / refresh | **Auth module** (issue or forward) | Logged-in API clients; Kithara verifies via module JWKS |
-| Guest control JWT | **Kithara** (mint) | Protected control after code exchange; Kithara verifies with its signing key |
-| Guest code | **Kithara** (on Struna) | Bootstrap only — exchange for guest JWT (rate-limited) |
+| Login access JWT / refresh | **Auth module** (issue or forward) | Durable API clients; Kithara verifies via module JWKS |
+| Ephemeral guest JWT / refresh | **Kithara** (mint) | Guest joiners after code exchange. Signing key: env if set, else auto-generated + persisted |
+| Guest code | **Kithara** (on Struna) | Bootstrap only — exchange for ephemeral guest session |
 | Listen token | **Kithara** (on Struna) | Protected playback `/stream/{slug}?token=` (no exchange) |
-| **Join secret** | **Kithara** config | Source / auth / client module identity — `Register`, heartbeats, and (for static clients) managed-user admin |
+| **Join secret** | **Kithara** config | Module identity — `Register`, heartbeats, static managed-user admin |
 
-Listen tokens appear in player URLs and access logs — prefer rotation and short TTL where practical (MVP: query param; Basic Auth / path token eval in v0.2).
+## User kinds (one DB)
 
-## User model (one DB)
+Thin `User` rows live in Kithara’s database. Kind matters for lifetime and token minting:
 
-Thin `User` rows plus per-provider **bindings** live in Kithara’s database — see [auth-adapters](../domains/auth-adapters.md). Auth modules have no separate user DB; they may request store/update via the authenticate result. Guests with only a guest control JWT are **not** Users.
+| Kind | Lifetime | Tokens | Binding |
+|------|----------|--------|---------|
+| **Durable user** | Until deleted | Auth-module JWT | `UserAuthBinding` |
+| **Managed user** | Until module revokes | Per-user credentials (static client) | `managed_by_module` + tenancy ref |
+| **Ephemeral guest user** | Until Struna delete | Kithara-minted JWT | None (Struna-scoped) |
+
+See [glossary](../glossary.md). Auth modules have no separate user DB.
 
 ## Client modules: user-aware vs static
 
-When a **client module** registers with Kithara, it declares how it authenticates to the API:
+Every client module **Registers over gRPC** like any other module ([grpc-module-registry](grpc-module-registry.md)). Then:
 
-| Mode | Meaning | Credential | Current modules |
-|------|---------|------------|-----------------|
-| **user-aware** | Acts on behalf of logged-in users | Bearer **user JWT** from an auth module | **Plume**, **Cauda** |
-| **static** | Owns many **persistent module-managed users** (tenancy-separated) | **Join secret** (create/manage those users only) + **per-user credentials** for `/api` | **Beak** (one managed user per Discord guild) |
+| Mode | Meaning | Credential on `/api` |
+|------|---------|----------------------|
+| **user-aware** | End users log in | Bearer **login JWT** from an auth module |
+| **static** | Owns many **managed users** | **Join secret** (admin only) + **per-user credentials** (day-to-day) |
 
-Do **not** authenticate many managed users with the shared **join secret**. See [clients](../domains/clients.md).
+See [clients](../domains/clients.md).
 
-## Permission matrix (sketch)
+## Permission / ACL (MVP)
 
-| Action | Typical role / check |
-|--------|----------------------|
-| Create Struna | `stream:create` |
-| Control playback | `stream:control` per Struna (user JWT, static per-user creds, or guest JWT) |
-| Listen (private) | `stream:listen` per Struna |
-| Link auth providers | authenticated user (explicit link flow) |
-| Guest code exchange | valid guest code + rate limit (no prior login) |
+| Principal | Create Struna | Control a Struna | Search + use own result refs |
+|-----------|---------------|------------------|------------------------------|
+| **Durable user** (registered via auth module) | Yes | Owner, or **grant** from owner (private); protected-control guests use guest path | Yes |
+| **Managed user** (static UI) | Up to module’s **advertised ceiling** (typical: create + manage own Strunas) | Same, within ceiling; create-time or runtime entity scope ≤ ceiling; unset → default to advertised set | Yes |
+| **Ephemeral guest user** | **No** | **Only** the Struna whose guest code they exchanged | Yes (cleared on Struna teardown) |
 
-**Org roles** may arrive in user JWT claims and/or from the module’s authenticate result stored on the binding. **Provider priority tier-list** arbitrates when multiple bindings disagree. **Struna ACLs** always live in Kithara.
+**Ownership:** stored on the Struna model (`OwnerUserId` or equivalent) at create time = creator.
+
+**Private control:** owner **plus** explicit grants to other durable/managed users (owner manages the grant list). Ephemeral guests are not on that list — they use the protected guest-code path instead.
+
+**Static module ceiling:** declared at Module Registry handshake. When the static UI creates a managed user it may narrow scope; it **cannot** raise rights above the advertised ceiling. If it sets nothing, Kithara applies the advertised defaults.
+
+## Permission matrix (summary)
+
+| Action | Who |
+|--------|-----|
+| Create Struna | Any durable user; managed users if ceiling allows |
+| Control (private) | Owner + grants |
+| Control (protected) | Ephemeral guests for **that** Struna only; also owner/grants as durable principals |
+| Listen (private) | Per Struna listen ACL / auth |
+| Guest code exchange | Valid code + rate limit (no prior login) |
+| Use search result refs | **Same principal** that ran the search |
+| Link auth providers | Durable authenticated user |
+
+**Org roles** may arrive in login JWT claims and/or from the module’s authenticate result stored on the binding. **Provider priority tier-list** arbitrates when multiple bindings disagree. **Struna ACLs** always live in Kithara.
 
 ## Join secrets
 
-Long-lived secrets in Kithara config for **every** module (source, auth, client). Same credential authenticates `Register` / heartbeats at **container startup** (Compose / operator infra — not an end-user permission) and, for **static** clients, managed-user admin. Ordinary Struna/API work for static modules still uses each managed user’s own credentials — the join secret is not an impersonation key for those users.
+Long-lived secrets in Kithara config for **every** module (source, auth, client). Same credential authenticates `Register` / heartbeats at **container startup** and, for **static** clients, managed-user admin. Ordinary Struna/API work for static modules still uses each managed user’s own credentials.
 
 **Related:** [domains/auth-adapters.md](../domains/auth-adapters.md) · [grpc-auth-adapter.md](grpc-auth-adapter.md) · [struna-access](../domains/struna-access.md) · [ADR 007](../adrs/007-auth-adapter-modules.md)
 

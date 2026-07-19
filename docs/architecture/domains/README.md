@@ -10,7 +10,7 @@ Concepts and lifecycles of Kithara's components and modules.
 | [source-modules.md](source-modules.md) | Module registration + slugs |
 | [auth-adapters.md](auth-adapters.md) | JWT issue/forward + bindings |
 | [playback-control.md](playback-control.md) | Broadcast play/skip/pause/delete |
-| [library-and-tunes.md](library-and-tunes.md) | Tune as library ref |
+| [library-and-tunes.md](library-and-tunes.md) | Tune as queue / history / optional cache |
 | [storage.md](storage.md) | Pluggable blob storage for library cache/uploads |
 | [clients.md](clients.md) | Client modules in context with Kithara |
 

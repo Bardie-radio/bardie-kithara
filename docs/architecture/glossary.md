@@ -12,17 +12,17 @@ Dual naming: **codename** (musical instruments theme) + **plain English**. When 
 | **Track job** | Decode / playback job | Ephemeral source-module work writing PCM for one queue item |
 | **Stream Server** | ICY HTTP output | Serves `GET /stream/{slug}` to listeners |
 | **ICY** / **ICY-over-HTTP** | Shoutcast-style metadata stream | Continuous HTTP audio with in-band `StreamTitle` / `icy-metaint` metadata |
-| **Tune** | Library item | Cached/metadata reference for file or ytdl content; blob via opaque storage key; not stream-owned |
-| **QueueEntry** | Queue item | Play intent: module slug + track ref (optional Tune id) |
+| **Tune** | Library item | Shared library unit: queue + history + optional blob cache; module + external id; not stream-owned |
+| **QueueEntry** | Queue item | Struna queue slot pointing at a **Tune id** |
 | **Plume** | Web UI client module | Optional **user-aware** client: `/`, `/player/{slug}` |
 | **Beak** | Discord bot client | Future **static** client: play Strunas in Discord voice; guild-scoped managed users |
 | **Cauda** | Telegram bot client | Future **user-aware** client: remote Struna control from Telegram chats |
 | **Client module** | User-facing integration | Deployable surface (Plume, Beak, Cauda, …) that calls Kithara REST |
 | **User-aware client** | Login UI module | Client whose end users authenticate with JWT from an auth module (Plume, Cauda) |
 | **Static client** | Bot / keyed UI module | Client with no human Bardie login; uses a **join secret** plus **module-managed users** with per-user credentials (Beak) |
-| **Module-managed user** | Bot-owned user | Persistent `User` owned by a static client (e.g. one per Discord guild for Beak) |
+| **Module-managed user** | Managed user | Alias — see **Managed user** above |
 | **Magpie** | YouTube / ytdl source | MVP: search + play via ytdl; cache-first Tune library; writes PCM to session FIFO |
-| **Starling** | External / local stream source | Future: re-broadcast direct audio input |
+| **Starling** | External / local stream source | Future: re-broadcast direct audio input; sparse Tune (URI, no blob) for history/queue |
 | **Catbird** | Local file source | Future: play uploaded / local audio files |
 | **Source module** | Audio provider | External container (Magpie, Starling, Catbird, …) registered with Kithara |
 | **Module Registry** | Module directory | Inside Kithara: source, auth, and client module registration |
@@ -30,12 +30,16 @@ Dual naming: **codename** (musical instruments theme) + **plain English**. When 
 | **Argus** | OIDC auth adapter | v0.2: IdP redirect/code exchange, IdP tokens / OIDC session pieces |
 | **Hecate** | Passkeys auth adapter | Future: WebAuthn / passkey ceremonies |
 | **Auth adapter / provider** | Auth provider | Separate container (Bes, Argus, Hecate, …); issues/forwards JWT + refresh; Kithara verifies + user DB |
-| **Auth orchestrator** | Auth router | Discovery merge, opaque Authenticate/Refresh routing, user JWT verify (JWKS), guest-code exchange + guest JWT mint/verify, join secrets |
+| **Auth orchestrator** | Auth router | Discovery merge, opaque Authenticate/Refresh routing, login JWT verify (JWKS), guest-code exchange + ephemeral guest user/JWT mint, `seedAdmin`, join secrets |
 | **UserAuthBinding** | Provider binding | `(user, provider_slug)` row + payload in Kithara DB |
+| **Durable user** | Full account | Normal login user with auth-module binding(s); survives Struna teardown |
+| **Managed user** | Module-owned account | Persistent `User` owned by a **static** client (e.g. one per Discord guild); long-lived, not Struna-scoped |
+| **Ephemeral guest user** | Struna guest account | Kithara-created `User` for one guest-code joiner; destroyed when that Struna dies; no auth-module binding |
 | **Listen token** | Playback secret | Query credential for **protected** playback (Kithara-owned) |
-| **Guest code** | Control bootstrap | Short Kithara-owned code; **exchange only** for a guest control JWT (rate-limited) |
-| **Guest control JWT** | Capability token | Kithara-signed Bearer for protected Struna control (`struna_id` + `stream:control`); not a User |
-| **Join secret** | Module credential | Long-lived secret in Kithara/Compose config — registers source/auth/client modules and (for static clients) administers module-managed users. One credential class (not a separate “bot token”). |
+| **Guest code** | Control bootstrap | Short Kithara-owned code **per Struna**; **exchange only** → new ephemeral guest user + Kithara-minted JWTs (rate-limited) |
+| **Guest JWT** | Ephemeral session token | Kithara-signed Bearer (+ refresh) for an ephemeral guest user; Struna-scoped control |
+| **Join secret** | Module credential | Long-lived secret in Kithara/Compose config — registers source/auth/client modules and (for static clients) administers managed users. One credential class (not a separate “bot token”). |
+| **Search result cache** | Playable search refs | Global search results retained per principal so they can play/queue by ref; guests cleared on Struna teardown; durable/managed until next search or configurable timeout |
 | **Blob storage** | Library object store | Kithara-owned pluggable backend for Tune bytes (local volume, S3-compatible, WebDAV later) |
 | **Storage key** | Opaque blob id | Durable pointer on a Tune; drivers resolve to file/object — not a host path |
 | **DbProvider** | Persistence backend | Config switch: `sqlite` or `postgres` |
@@ -49,7 +53,7 @@ Module and provider registration slugs are the lowercase codename (`magpie`, `be
 | Neck | Playlist → FFmpeg concat | Session FIFO → FFmpeg → Stream Server |
 | Struna | Metadata only, no source binding | Slug, access modes, alive-on-create, queue |
 | Audio job | N/A | Track job per queue item; multi-source capable |
-| Tune | `PlaylistId` + `Playlists` conflict | Library reference; queue holds intents |
+| Tune | `PlaylistId` + `Playlists` conflict | Library unit for queue/history/optional cache |
 
 See [spike/prototype-neck-ffmpeg.md](spike/prototype-neck-ffmpeg.md).
 
