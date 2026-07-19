@@ -3,9 +3,12 @@
 ```mermaid
 flowchart LR
   Plume --> Collector[OTel Collector]
+  Beak --> Collector
+  Cauda --> Collector
   Kithara --> Collector
-  Src[Source Module] --> Collector
-  Auth[Auth Adapter] --> Collector
+  Magpie --> Collector
+  Bes --> Collector
+  Argus --> Collector
   Collector --> Tempo[Traces]
   Collector --> Loki[Logs]
   Collector --> Prom[Metrics]
@@ -15,12 +18,18 @@ flowchart LR
 
 ## Mandatory telemetry
 
-| Component | service.name example |
+| Component | service.name |
 |-----------|---------------------|
 | Kithara | `bardie.kithara` |
 | Plume | `bardie.plume` |
-| Source modules | `bardie.source.*` *(suffix TBD with module name)* |
-| Auth adapters | `bardie.auth.*` *(suffix TBD with module name)* |
+| Beak | `bardie.beak` |
+| Cauda | `bardie.cauda` |
+| Magpie | `bardie.source.magpie` |
+| Starling | `bardie.source.starling` |
+| Catbird | `bardie.source.catbird` |
+| Bes | `bardie.auth.bes` |
+| Argus | `bardie.auth.argus` |
+| Hecate | `bardie.auth.hecate` |
 
 ## Module contract
 
@@ -38,8 +47,8 @@ Every module must:
 
 ## Trace scenarios
 
-1. Login: Client → Kithara `Authenticate` / OIDC callback → provider identity proof → Kithara JWT issue
-2. Play: Client → API → source `StartTrack` → Neck FIFO/encoder → Stream Server
+1. Login: Client → Kithara authenticate/callback → Bes or Argus → module JWT (+ refresh); Kithara verifies later via JWKS
+2. Play: Client → API → Magpie `StartTrack` → Neck FIFO/encoder → Stream Server
 3. Legacy listen: Player → `/stream/{slug}` (root span with slug attribute)
 
 ## Reference stack
@@ -51,8 +60,9 @@ Grafana Tempo + Loki + Prometheus via OTel Collector. Backends swappable — OTL
 | Naming / contract | Follow up in |
 |-------------------|----------------|
 | `bardie.plume` OTLP export | **bardie-plume** |
-| `bardie.source.*` | Source module repos (names TBD) |
-| `bardie.auth.*` | Auth adapter repos (login+password MVP name/repo TBD) |
+| `bardie.beak` / `bardie.cauda` | **bardie-beak**, **bardie-cauda** |
+| `bardie.source.magpie` (and siblings) | **bardie-magpie**, **bardie-starling**, **bardie-catbird** |
+| `bardie.auth.bes` (and siblings) | **bardie-bes**, **bardie-argus**, **bardie-hecate** |
 | Collector Compose / optional backends | Org [05-deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md) |
 
 **Related:** [ADR 008](../adrs/008-otel-observability.md) · [configuration.md](configuration.md)

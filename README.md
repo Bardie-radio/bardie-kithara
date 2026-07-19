@@ -36,15 +36,16 @@ Kithara sits at the center of Bardie. **Client modules**, **source modules**, an
 ```text
 ├── Client modules       → User-facing control and discovery surfaces
 │   ├── Plume            → Web UI (MVP); / and /player/{slug}
-│   ├── Discord bot      → Voice channels + stream control (name TBD)
-│   └── Telegram bot     → Remote Struna control (name TBD)
-├── Source modules       → Audio providers (gRPC + Unix socket)
-│   ├── YouTube / ytdl   → Search and play from online sources (name TBD)
-│   ├── Local input      → Re-broadcast direct audio from your PC
-│   └── File source      → Play uploaded audio files
-├── Auth adapters        → Login and token validation (gRPC; names TBD)
-│   ├── Login + password → MVP local accounts
-│   └── OIDC             → Zitadel, Google, … (v0.2)
+│   ├── Beak             → Discord voice + stream control (future)
+│   └── Cauda            → Telegram remote Struna control (future)
+├── Source modules       → Audio providers (gRPC + FIFO)
+│   ├── Magpie           → YouTube / ytdl search and play (MVP)
+│   ├── Starling         → External / local stream input (future)
+│   └── Catbird          → Local / uploaded files (future)
+├── Auth adapters        → Login proof + protocol auth (gRPC; no built-in)
+│   ├── Bes              → Login + password (MVP)
+│   ├── Argus            → OIDC — Zitadel, Google, … (v0.2)
+│   └── Hecate           → Passkeys (future)
 └── Legacy players       → Listen-only: VLC, VRChat via /stream/{slug}
 ```
 

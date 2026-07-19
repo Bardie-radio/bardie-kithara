@@ -9,24 +9,29 @@ Env and Compose knobs for the **Kithara container** — database, collectors, mo
 | `DbProvider` | `sqlite` or `postgres` |
 | `DbConnectionString` | EF connection string |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | External collector URL (e.g. Alloy) |
-| `BARDIE_SERVICE_TOKENS` | JSON map of bot/service tokens |
-| `BARDIE_MODULE_JOIN_SECRET` | Shared secret for source/auth module `Register` |
+| `BARDIE_JOIN_SECRETS` | Map of module slug → secret (source, auth, and client modules — register + static admin) |
 | `BARDIE_AUTH_PROVIDER_PRIORITY` | Ordered provider slugs for claim/role arbitration |
-| `BARDIE_BOOTSTRAP_ADMIN_*` | First local admin when DB empty (disabled if OIDC-from-start) |
-| `BARDIE_JWT_*` / refresh TTLs | Session lifetime knobs (defaults TBD) |
-| `BARDIE_STRUNA_SILENCE_CLEANUP` | Auto-stop after silent duration (planned) |
+| `BARDIE_STRUNA_SILENCE_CLEANUP` | Auto-delete after silent duration (planned) |
+| `BARDIE_GUEST_JWT_*` | Guest control JWT signing / TTL (Kithara-minted capability tokens; defaults TBD) |
+| `BARDIE_STORAGE_DRIVER` | Blob backend: `local` (MVP default) \| `s3` \| later `webdav` |
+| `BARDIE_STORAGE_PATH` | Local driver root (volume or NFS/SMB mount) |
+| `BARDIE_STORAGE_S3_*` | S3-compatible endpoint, bucket, region, credentials (sketch) |
+
+**User/login** JWT mint / refresh TTLs belong on the **auth module** (e.g. Bes) — Kithara only verifies those via module JWKS. Optional Kithara knobs later: JWKS cache / clock-skew tolerances.
+
+Library blobs (Magpie cache, Catbird uploads) use the storage driver above — see [storage](../domains/storage.md). Not Redis.
 
 ## Module discovery
 
 Source and auth modules register via gRPC on startup. Compose sets:
 
 - `KITHARA_GRPC_ADDRESS` (internal DNS to Kithara `:5000`)
-- Join secret matching Kithara
+- Join secret matching Kithara (`BARDIE_JOIN_SECRETS`)
 - Optional `MODULE_SLUG_OVERRIDE` when community slugs collide
 
-## Local password (MVP)
+## Bes (MVP password auth)
 
-Built into Kithara — user + `UserAuthBinding` rows. No separate auth DB.
+Separate `bes` container. User + `UserAuthBinding` rows stay in Kithara’s DB — Bes has no separate auth DB. JWT mint / refresh lifetime knobs live on Bes (not on Kithara).
 
 ## Reserved slugs
 

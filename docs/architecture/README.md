@@ -49,6 +49,7 @@ Deep-dive architecture for **Kithara** — the Bardie core backend. For ecosyste
 - [auth-adapters](domains/auth-adapters.md)
 - [playback-control](domains/playback-control.md)
 - [library-and-tunes](domains/library-and-tunes.md)
+- [storage](domains/storage.md)
 - [clients](domains/clients.md)
 
 ### Interfaces

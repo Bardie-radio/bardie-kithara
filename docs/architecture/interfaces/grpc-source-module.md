@@ -19,11 +19,12 @@ message RegisterRequest {
   string join_secret = 2;
   repeated string capabilities = 3;
   string grpc_advertise_address = 4;
+  // search_fields: advertised schema for structured Search (title mandatory if search)
 }
 
 message StartTrackRequest {
   string struna_id = 1;
-  string track_ref = 2;         // module-specific (URL, tune id, …)
+  string track_ref = 2;         // module-specific (URL, tune id, YouTube link, stream URI, …)
   string fifo_path = 3;         // Kithara-owned session FIFO to write PCM into
 }
 
@@ -47,12 +48,12 @@ message TrackStatusEvent {
 
 ## Registration security
 
-Join with Compose **join secret**. gRPC `:5000` on Kithara is internal-only. Slug spoofing is rejected without a matching secret/claim.
+Authenticate with a **join secret**. gRPC `:5000` on Kithara is internal-only. Slug spoofing is rejected without a matching secret/claim.
 
 ## Observability
 
 - Propagate W3C `traceparent` on all RPCs
-- Export OTLP with `service.name=bardie.source.<module>` (suffix TBD with name)
+- Export OTLP with `service.name=bardie.source.<slug>` (e.g. `bardie.source.magpie`)
 - Enforce parallel track-job limits internally
 
 **Related:** [domains/source-modules.md](../domains/source-modules.md) · [ADR 003](../adrs/003-grpc-control-plane.md) · [ADR 004](../adrs/004-source-instance-socket-audio-plane.md)
