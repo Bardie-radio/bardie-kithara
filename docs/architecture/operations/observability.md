@@ -59,10 +59,10 @@ Grafana Tempo + Loki + Prometheus via OTel Collector. Backends swappable — OTL
 
 | Naming / contract | Follow up in |
 |-------------------|----------------|
-| `bardie.plume` OTLP export | **bardie-plume** |
-| `bardie.beak` / `bardie.cauda` | **bardie-beak**, **bardie-cauda** |
-| `bardie.source.magpie` (and siblings) | **bardie-magpie**, **bardie-starling**, **bardie-catbird** |
-| `bardie.auth.bes` (and siblings) | **bardie-bes**, **bardie-argus**, **bardie-hecate** |
+| `bardie.plume` OTLP export | **plume** |
+| `bardie.beak` / `bardie.cauda` | **beak**, **cauda** |
+| `bardie.source.magpie` (and siblings) | **magpie**, **starling**, **catbird** |
+| `bardie.auth.bes` (and siblings) | **bes**, **argus**, **hecate** |
 | Collector Compose / optional backends | Org [05-deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md) |
 
 **Related:** [ADR 008](../adrs/008-otel-observability.md) · [configuration.md](configuration.md)

@@ -42,9 +42,9 @@ Exact capability strings stay sketch-level in the [gRPC contract](../interfaces/
 
 | Codename | Role | MVP |
 |----------|------|-----|
-| **Magpie** | YouTube / ytdl — search + play; **cache-first Tunes**, download-and-create Tune on miss | Yes |
-| **Starling** | External / local stream — re-broadcast direct audio input; no mid-job pause | Future |
-| **Catbird** | Local files — play uploaded / local audio | Future |
+| **Magpie** | YouTube / ytdl — search + play; cache-first Tunes ([Magpie docs](https://github.com/Bardie-radio/magpie/tree/main/docs/architecture)) | Yes |
+| **Starling** | External / local stream — re-broadcast direct audio input; no mid-job pause ([planned](https://github.com/Bardie-radio/starling/blob/main/docs/architecture/01-planned-role.md)) | Future |
+| **Catbird** | Local files — play uploaded / local audio ([planned](https://github.com/Bardie-radio/catbird/blob/main/docs/architecture/01-planned-role.md)) | Future |
 
 Image/Compose: `magpie`, `starling`, `catbird`. OTel: `bardie.source.<slug>`.
 

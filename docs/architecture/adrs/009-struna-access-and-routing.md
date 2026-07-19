@@ -37,8 +37,8 @@ Streams need human-readable URLs, separate listen vs control permissions, and le
 
 | Decision | Follow up in |
 |----------|----------------|
-| URI map + Plume routes | **bardie-plume**, org edge/Compose ([05-deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md)) |
-| Listen token / guest exchange UX | **bardie-plume** (Kithara owns secrets + mints guest JWTs) |
+| URI map + Plume routes | **plume**, org edge/Compose ([05-deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md)) |
+| Listen token / guest exchange UX | **plume** (Kithara owns secrets + mints guest JWTs) |
 
 ## Alternatives considered
 

@@ -35,10 +35,10 @@ W3C `traceparent` propagated across HTTP and gRPC. Service names:
 
 | Service name | Follow up in |
 |--------------|----------------|
-| `bardie.plume` | **bardie-plume** |
-| `bardie.beak` / `bardie.cauda` | **bardie-beak**, **bardie-cauda** |
-| `bardie.source.*` | **bardie-magpie**, **bardie-starling**, **bardie-catbird** |
-| `bardie.auth.*` | **bardie-bes**, **bardie-argus**, **bardie-hecate** |
+| `bardie.plume` | **plume** |
+| `bardie.beak` / `bardie.cauda` | **beak**, **cauda** |
+| `bardie.source.*` | **magpie**, **starling**, **catbird** |
+| `bardie.auth.*` | **bes**, **argus**, **hecate** |
 | Collector wiring | Org Compose / [05-deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md) |
 
 ## Alternatives considered

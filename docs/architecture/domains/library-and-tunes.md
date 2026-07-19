@@ -1,6 +1,6 @@
 # Library and Tunes
 
-> **Scope note:** This is a Kithara deep-dive. The shared library model, Tune persistence, and QueueEntry references belong here. **Where** bytes live is [storage.md](storage.md). Per-module download/upload behaviour (Magpie, Catbird, Starling) is sketched below for now because those repos have no architecture docs yet — it will move into each module’s docs later.
+> **Scope note:** This is a Kithara deep-dive. The shared library model, Tune persistence, and QueueEntry references belong here. **Where** bytes live is [storage.md](storage.md). How Magpie downloads and cache-hits is owned by [Magpie architecture](https://github.com/Bardie-radio/magpie/tree/main/docs/architecture).
 
 ```mermaid
 flowchart LR
@@ -35,26 +35,11 @@ Exact schema is still target-level — see [ADR 006](../adrs/006-stream-source-t
 
 ## Where tunes apply
 
-*(Module-specific rows — provisional until each source has its own docs.)*
-
 | Source | How Tunes are used |
 |--------|--------------------|
-| **Magpie** (ytdl) | **Cache-first.** Look up an existing Tune by external id / URL; if the blob exists in storage, play from it. On miss, download, **create (or update) a Tune** with a storage key, then play. |
-| **Catbird** (files) | Tune is required — metadata + storage key for uploaded / imported audio via blob storage. |
-| **Starling** (external / continuous stream) | No Tune — input is a live URI / device stream, not a reusable library item. |
-
-## Magpie: cache then download
-
-*(Provisional Magpie deep dive — will move to Magpie docs.)*
-
-Magpie always ends up with a Tune for content it can replay:
-
-1. Client asks to play (or queue) a Magpie ref — video id, YouTube URL, or a search-result track ref.
-2. Magpie (or Kithara library lookup on its behalf) finds an existing **Tune** for that external id.
-3. **Cache hit** — blob present for the Tune’s storage key → decode from blob storage into the session FIFO; no network fetch.
-4. **Cache miss** — download via ytdl → **put** into blob storage → **create or update the Tune** (metadata + storage key) → decode into the FIFO.
-
-So Magpie does **not** “play by external ref only and skip the library.” External refs are how you *find or create* a Tune; the library is the durable record of what was already fetched.
+| **Magpie** (ytdl) | Cache-first Tune + blob — deep dive in [Magpie docs](https://github.com/Bardie-radio/magpie/blob/main/docs/architecture/02-contracts.md) |
+| **Catbird** (files) | Tune required — metadata + storage key ([Catbird planned role](https://github.com/Bardie-radio/catbird/blob/main/docs/architecture/01-planned-role.md)) |
+| **Starling** (external / continuous stream) | No Tune — live URI ([Starling planned role](https://github.com/Bardie-radio/starling/blob/main/docs/architecture/01-planned-role.md)) |
 
 ## Queue model
 

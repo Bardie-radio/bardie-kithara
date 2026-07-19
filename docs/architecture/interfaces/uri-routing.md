@@ -44,7 +44,7 @@ Long-lived `/stream/{slug}` needs generous proxy read timeouts — see [operatio
 
 | Change | Follow up in |
 |--------|--------------|
-| Path map `/`, `/player/*`, `/api/*`, `/stream/*` | **bardie-plume** (UI routes); **org** edge/Compose ([05-deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md)) |
+| Path map `/`, `/player/*`, `/api/*`, `/stream/*` | **plume** (UI routes); **org** edge/Compose ([05-deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md)) |
 | Published ports / service DNS | Org reference Compose — not duplicated here |
 
 **Related:** [operations/deployment.md](../operations/deployment.md) · [auth.md](auth.md) · [ADR 009](../adrs/009-struna-access-and-routing.md) · [org deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md)

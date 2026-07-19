@@ -40,7 +40,7 @@ Dual naming: **codename** (musical instruments theme) + **plain English**. When 
 | **Storage key** | Opaque blob id | Durable pointer on a Tune; drivers resolve to file/object — not a host path |
 | **DbProvider** | Persistence backend | Config switch: `sqlite` or `postgres` |
 
-Module and provider registration slugs are the lowercase codename (`magpie`, `bes`, `argus`, …). Image/Compose names use the same slug. OTel `service.name` uses `bardie.kithara`, `bardie.plume`, `bardie.beak`, `bardie.cauda`, `bardie.source.<slug>`, `bardie.auth.<slug>`.
+Module and provider registration slugs are the lowercase codename (`magpie`, `bes`, `argus`, …). Image/Compose names and **GitHub repos** use the same slug (`Bardie-radio/kithara`, `Bardie-radio/plume`, … — **no** `bardie-` repo prefix). OTel `service.name` uses `bardie.kithara`, `bardie.plume`, `bardie.beak`, `bardie.cauda`, `bardie.source.<slug>`, `bardie.auth.<slug>`.
 
 ## Prototype vs target
 

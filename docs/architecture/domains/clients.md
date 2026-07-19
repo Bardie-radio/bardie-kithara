@@ -1,111 +1,65 @@
-# Clients
+# Client modules (Kithara contract)
+
+What Kithara treats as a **client module**, how it attaches to core, and which credentials it may use on `/api`. The catalog of planned clients (Plume, Beak, Cauda, …) lives in the [org client modules](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/06-client-modules.md) page.
 
 ```mermaid
 flowchart TB
-  subgraph clients [Client modules]
-    Plume["Plume (user-aware)"]
-    Cauda["Cauda (user-aware)"]
-    Beak["Beak (static)"]
-  end
-  subgraph listen [Listen-only]
-    Players[Legacy Players VLC VRChat]
-  end
-  Plume -->|Bearer JWT| Kithara
-  Cauda -->|Bearer JWT| Kithara
-  Beak -->|join secret + per-tenant user creds| Kithara
-  Players -->|/stream slug| StreamSrv[Stream Server]
+  ClientMod[Client_module]
+  Players[Legacy_players]
+  ClientMod -->|REST /api| API[Kithara_REST]
+  Players -->|ICY /stream| StreamSrv[Stream_Server]
 ```
 
-Bardie's **user-facing surface is modular**. Client modules are separate deployable components that talk to Kithara's REST API — they are not baked into the core. Pick the interfaces that match how your community communicates.
 
-| Module | Channel | Auth mode | MVP | Role |
-|--------|---------|-----------|-----|------|
-| **Plume** | Web | **user-aware** | Yes (optional) | List/create Strunas, control playback, optional in-browser listen |
-| **Cauda** | Telegram | **user-aware** | Future | Remote Struna control from chats (Telegram user ↔ Bardie user) |
-| **Beak** | Discord | **static** | Future | Play into VCs; **module-managed users** isolated per Discord guild |
 
-**Legacy players** (VLC, VRChat, etc.) connect to `GET /stream/{slug}` for listen-only playback. They are not client modules — no REST control surface.
+## What counts as a client module
 
-## Registration: user-aware vs static
+A **client module** is a separate deployable that presents Bardie on some channel (web, chat, bot, …) and drives Strunas through Kithara’s **REST API**. It registers (or is expected to) with a join secret and an auth mode, calls `/api` for create/control/search/queue, and may provide player capabilities
 
-Client modules register with Kithara (**join secret** + metadata). Part of that payload is how the module authenticates to `/api`:
+Out of scope for “client module”: legacy players (VLC, direct browser playback, etc) that only hit `GET /stream/{slug}`, no control over system or authorization in most cases
 
-| Mode | Meaning | Credential on `/api` | Current modules |
-|------|---------|----------------------|-----------------|
-| **user-aware** | End users log in; module acts with their identity | Bearer **JWT** from an auth module | **Plume**, **Cauda** |
-| **static** | No human Bardie login through this UI; module owns **many** persistent users | **Join secret** (admin) + **per-user credentials** (day-to-day) | **Beak** |
+Kithara does **not** serve `/` or `/player/`* — those belong to a UI client (typically Plume) at the edge. See [uri-routing](../interfaces/uri-routing.md).
 
-Module-level **capability rights** (what the static app is allowed to do at all) are declared at **module registration**. Per-user rights/ACLs still live on each managed `User` / Struna as usual.
+## Auth modes (contract)
+
+When a client module registers, it declares how it authenticates to `/api`:
+
+
+| Mode           | Meaning                                                                      | Credential on `/api`                                                         |
+| -------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **user-aware** | End users log in; module acts with their identity                            | Bearer **user JWT** from an auth module (via Kithara discovery/authenticate) |
+| **static**     | No human Bardie login through this UI; module owns **many** persistent users | **Join secret** (admin only) + **per-user credentials** (day-to-day)         |
+
+
+Module-level **capability rights** (what the static app may do at all) are declared at registration. Per-user / Struna ACLs still live in Kithara.
 
 ### Static modules and module-managed users
 
-Rejected shapes:
+Do **not**:
 
-| Shape | Why not |
-|-------|---------|
-| One user for the whole static module | Public Beak would share one identity across every Discord server → every guild sees every Struna |
-| One user per voice channel | Too many users; VC is a Struna lifetime, not a tenancy boundary |
-| Many users, all acting under the **same** join secret | Shared secret impersonation — any caller with the join secret can act as any managed user |
 
-**Chosen shape:**
+| Shape                                                     | Why not                              |
+| --------------------------------------------------------- | ------------------------------------ |
+| One user for the whole static module                      | Shared identity across every tenancy |
+| One user per short-lived session (e.g. per voice channel) | Too many users; session ≠ tenancy    |
+| Many users all acting under the **same** join secret      | Shared-secret impersonation          |
 
-1. Static module registers with its **join secret**, used for **module admin** work: create/list/revoke **module-managed users**, not for ordinary Struna control as “whatever user.”
-2. The module asks Kithara to create a **persistent** `User` (module-managed) for each **tenancy boundary**. For **Beak**, that boundary is a **Discord guild** (server) — not the whole bot, not each VC.
-3. On create, Kithara returns **distinct credentials** for that user (API key and/or JWT material Beak stores). Day-to-day `/api` calls (create Struna for a VC, play, queue) use **that user’s** credential.
-4. Kithara records `managed_by_module = beak` (and Beak’s external ref, e.g. `guild_id`) on the user so tenancy stays enforceable server-side.
-5. Voice channels map to **Strunas owned by the guild’s managed user** — many Strunas, one user per guild.
 
-**Persistence:** module-managed users are **durable** `User` rows (listening history, owned library/static tracks, Struna ownership over time). They are not throwaway session principals.
+**Chosen shape:** join secret for **module admin** (create/list/revoke managed users); each **tenancy boundary** gets a durable `User` with **distinct** credentials for day-to-day `/api`. Kithara records `managed_by_module` + external tenancy ref. Concrete tenancy keys (e.g. Discord guild) are module-specific — see [org catalog](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/06-client-modules.md) and each module’s docs.
 
-Other static modules pick their own tenancy key the same way (e.g. Telegram bot would use a different separator if it were static — Cauda is user-aware instead).
+## Attachment to core
 
-## Plume (web UI)
+1. **Register** — join secret + auth mode (`user-aware`  `static`) + static module rights when static (REST or thin join RPC — sketch)
+2. **Auth** — user JWT; or join secret for managed-user admin + per-user credentials for API work
+3. **Control** — REST playback/queue/search as in [rest-api](../interfaces/rest-api.md)
+4. **Listen** — optional; `/stream/{slug}` (or embed). Not required to be a client module
 
-| Route | Role |
-|-------|------|
-| `/` | Main page — list/create Strunas (auth required) |
-| `/player/{slug}` | Queue control; browser player **off by default**; PWA later |
-
-Plume is the **reference user-aware client** for MVP — the stack still works without it (Kithara owns login/callback). Plume renders login UI from discovery (`form_schema` / redirect); it does not talk to auth adapters directly ([ADR 007](../adrs/007-auth-adapter-modules.md)).
-
-Image/Compose: `plume`. OTel: `bardie.plume`.
-
-## Cauda (Telegram)
-
-User-aware control surface: Telegram users authenticate (JWT via auth modules) and manage Strunas from chats.
-
-Planned functionality:
-- list active Strunas and now-playing
-- play, skip, stop, queue tunes
-- create or configure Strunas (permissions permitting)
-
-Image/Compose: `cauda`. OTel: `bardie.cauda`.
-
-## Beak (Discord bot)
-
-**Static** Discord integration — guild-isolated module-managed users.
-
-Planned functionality:
-- first time in a guild → create (or load) that guild’s managed user + store its credentials
-- join a voice channel → create/control a Struna **as that guild user**
-- history / owned tracks / library attach to the guild user across VC sessions
-- leave VC → stop that Struna; **keep** the guild user
-
-Image/Compose: `beak`. OTel: `bardie.beak`.
-
-## Client module contract
-
-1. **Register** — join secret + auth mode (`user-aware` or `static`) + static **module rights** when static
-2. **Auth** — JWT (user-aware); or join secret for managed-user admin + per-user credentials for API work (static)
-3. **Control** — `play` / `quickplay`, skip, queue / `quickqueue`, pause, delete
-4. **Listen** — optional; redirect users to `/stream/{slug}` or embed player (Plume only in MVP)
-
-No gRPC required for day-to-day control — REST only. Source and auth adapters use gRPC internally; client registration may be REST or a thin join RPC (sketch).
+Day-to-day control is **REST only** (no source/auth gRPC from the client). Compose / join-secret wiring: [org deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md) · [operations/deployment](../operations/deployment.md).
 
 ## OTel
 
-Client modules export OTLP and show up in the same trace graph as Kithara ([ADR 008](../adrs/008-otel-observability.md)).
+Client modules export OTLP (`bardie.plume`, `bardie.beak`, `bardie.cauda`, …) into the same graph as Kithara ([ADR 008](../adrs/008-otel-observability.md)).
 
-**Related:** [interfaces/uri-routing.md](../interfaces/uri-routing.md) · [interfaces/auth.md](../interfaces/auth.md) · [domains/struna-access.md](struna-access.md)
+**Related:** [org client modules](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/06-client-modules.md) · [auth.md](../interfaces/auth.md) · [struna-access.md](struna-access.md) · [uri-routing.md](../interfaces/uri-routing.md)
 
 **Read next:** [../interfaces/rest-api.md](../interfaces/rest-api.md)
