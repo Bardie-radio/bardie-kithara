@@ -23,7 +23,7 @@ Deep-dive architecture for **Kithara** — the Bardie core backend. For ecosyste
 | [Interfaces](interfaces/) | REST, gRPC, streaming, routing |
 | [Operations](operations/) | Deploy, config, observability |
 | [ADRs](adrs/) | Architecture decision records |
-| [MVP](mvp/) | v0.1 scope and milestones |
+| [MVP](mvp/) | v0.1 scope, milestones, implementation plan |
 | [Spike](spike/) | Prototype assessment |
 
 ## Read paths
@@ -54,6 +54,7 @@ Deep-dive architecture for **Kithara** — the Bardie core backend. For ecosyste
 
 ### Interfaces
 - [rest-api](interfaces/rest-api.md)
+- [grpc-module-registry](interfaces/grpc-module-registry.md)
 - [grpc-source-module](interfaces/grpc-source-module.md)
 - [grpc-auth-adapter](interfaces/grpc-auth-adapter.md)
 - [uri-routing](interfaces/uri-routing.md)
@@ -69,6 +70,7 @@ Deep-dive architecture for **Kithara** — the Bardie core backend. For ecosyste
 ### MVP
 - [v0.1-scope](mvp/v0.1-scope.md)
 - [v0.1-milestones](mvp/v0.1-milestones.md)
+- [implementation-plan](mvp/implementation-plan.md)
 
 ### Spike
 - [prototype-neck-ffmpeg](spike/prototype-neck-ffmpeg.md)

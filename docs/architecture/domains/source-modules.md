@@ -15,14 +15,16 @@ Solid edge = MVP; dashed = later. **Source modules** are separate containers tha
 
 ## Registration
 
-On startup, module calls `Register` with:
+On startup, module **dials Kithara** and calls Module Registry `Register` with:
 
 - **Slug** (lowercase codename, e.g. `magpie`) — operator may override via Compose env when community modules collide
 - **Capabilities** — what this module supports (see below)
-- gRPC endpoint address
+- gRPC advertise address (for work RPCs)
 - **Join secret** from Compose / Kithara config (same network is not enough)
 
-Kithara **Module Registry** tracks health and routes `Search` / `StartTrack` / `StopTrack` (and pause when advertised).
+Default dial target: Compose DNS to Kithara (`KITHARA_GRPC_ADDRESS`, e.g. `kithara:5000`).
+
+Kithara **Module Registry** tracks health and routes `Search` / `StartTrack` / `StopTrack` / `PauseTrack` / `ResumeTrack` (when advertised).
 
 ### Capabilities
 
@@ -32,7 +34,7 @@ Flags the module advertises at registration so Kithara and clients know which RP
 |------------|---------|
 | `search` | Module implements `Search` (clients can query it, alone or in fan-out) |
 | `play` | Module can run track jobs (`StartTrack` / `StopTrack`) writing PCM to the session FIFO |
-| `pause` | An active track job can **pause and resume** without tearing down the job |
+| `pause` | An active track job can **pause and resume** without tearing down the job (`PauseTrack` / `ResumeTrack`) |
 
 Modules **without** `pause` (Starling) only support a full **stop** of the track job — there is no mid-job freeze. That is the main behavioral difference for an external/live stream source versus Magpie or Catbird: the input is continuous.
 
@@ -42,20 +44,20 @@ Exact capability strings stay sketch-level in the [gRPC contract](../interfaces/
 
 | Codename | Role | MVP |
 |----------|------|-----|
-| **Magpie** | YouTube / ytdl — search + play; **cache-first Tunes**, download-and-create Tune on miss | Yes |
-| **Starling** | External / local stream — re-broadcast direct audio input; no mid-job pause | Future |
-| **Catbird** | Local files — play uploaded / local audio | Future |
+| **Magpie** | YouTube / ytdl — search + play; cache-first Tunes ([Magpie docs](https://github.com/Bardie-radio/magpie/tree/main/docs/architecture)) | Yes |
+| **Starling** | External / local stream — re-broadcast direct audio input; no mid-job pause ([planned](https://github.com/Bardie-radio/starling/blob/main/docs/architecture/01-planned-role.md)) | Future |
+| **Catbird** | Local files — play uploaded / local audio ([planned](https://github.com/Bardie-radio/catbird/blob/main/docs/architecture/01-planned-role.md)) | Future |
 
 Image/Compose: `magpie`, `starling`, `catbird`. OTel: `bardie.source.<slug>`.
 
 ## Search
 
-Kithara exposes two client-facing search modes; both map to the module `Search` RPC when the source advertises `search`:
+Kithara exposes two client-facing search modes on **global** REST paths (`/api/search…`); both map to the module `Search` RPC when the source advertises `search`. Results are cached per **principal** (durable / managed / ephemeral guest) — guests cleared on Struna teardown; others until next search or configurable timeout — see [rest-api](../interfaces/rest-api.md).
 
 | Client mode | REST (sketch) | What the module sees |
 |-------------|----------------|----------------------|
-| **Quicksearch** | `GET …/quicksearch?q=…` (+ optional `module`) | Plain-text / **title-only** query; fan-out if `module` omitted |
-| **Regular search** | `POST …/search` | Structured fields from the module’s advertised schema (always includes `title`) |
+| **Quicksearch** | `GET /api/search/quick?q=…` (+ optional `module`) | Plain-text / **title-only** query; fan-out if `module` omitted |
+| **Regular search** | `POST /api/search` | Structured fields from the module’s advertised schema (always includes `title`) |
 
 Omit module slug to fan out across registered sources that advertise `search`. Queue / play always store the winning **module slug + track ref**.
 
@@ -71,7 +73,7 @@ At **Register**, searchable modules advertise a **search field schema** so clien
 
 ### Plain-text fallback
 
-If a text (quicksearch / title-only) search returns nothing, try interpreting the query as a **native id / URI** before returning empty (Magpie: video id or YouTube URL). Starling has no search surface — its stream URI goes on **play**, not search.
+If a text (quicksearch / title-only) search returns nothing, try interpreting the query as a **native id / URI** before returning empty (Magpie: video id or YouTube URL). Starling has no search surface — its stream URI goes on **play** (which creates a sparse Tune for library/history).
 
 ## Contract
 

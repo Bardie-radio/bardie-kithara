@@ -1,34 +1,58 @@
 # gRPC Auth Adapter Contract (sketch)
 
-Auth adapters (**Bes**, **Argus**, **Hecate**, …) speak **one** gRPC contract to Kithara. Every adapter is a separate container.
+Auth adapters (**Bes**, **Argus**, **Hecate**, …) speak **one** work contract. Join is via [Module Registry](grpc-module-registry.md) (module dials Kithara) — `Register` is **not** on this service.
 
-**Unified token protocol: JWT.** Modules authenticate/verify and **return access + refresh JWTs** (mint their own, or forward a provider’s — Argus forwards OIDC tokens). Kithara stores users/bindings, verifies access JWTs with the module’s registered JWKS, and does **not** mint user JWTs.
+**Unified token protocol for login: JWT.** Modules authenticate/verify and **return access + refresh JWTs** (mint their own, or forward a provider’s — Argus forwards OIDC tokens). Kithara stores users/bindings and verifies those JWTs via module JWKS.
+
+Kithara does **not** mint auth-module login JWTs. It **does** mint JWTs for **ephemeral guest users** after guest-code exchange — see [auth](auth.md).
 
 There is **no** protocol-specific RPC. Redirect callbacks, form posts, and ceremony payloads all arrive as an opaque bag on `Authenticate`.
 
 ```protobuf
 service AuthAdapter {
-  rpc Register(RegisterRequest) returns (RegisterResponse);
   rpc Health(HealthRequest) returns (HealthResponse);
   rpc GetProviders(GetProvidersRequest) returns (GetProvidersResponse);
   rpc Authenticate(AuthenticateRequest) returns (AuthenticateResponse);
   rpc Refresh(RefreshRequest) returns (RefreshResponse);
+  rpc SeedAdmin(SeedAdminRequest) returns (SeedAdminResponse);
   // User + binding persistence goes through Kithara — adapters do not open a DB.
 }
 ```
 
-Per-request `ValidateToken` against the module is **not** the hot path — Kithara verifies JWTs locally using JWKS from `Register` (or IdP JWKS URL Argus supplies).
+Per-request `ValidateToken` against the module is **not** the hot path — Kithara verifies login JWTs locally using JWKS from Registry registration (or IdP JWKS URL Argus supplies).
+
+## Capabilities (Registry)
+
+| Capability | Meaning |
+|------------|---------|
+| `seedAdmin` | Module can create an initial admin (local proof) when Kithara asks |
+| (others TBD) | e.g. self-register, password reset — advertise when implemented |
+
+**Bes** advertises `seedAdmin`. **Argus** typically does **not** — IdP users are discovered/linked, not locally invented.
+
+### `SeedAdmin`
+
+Called by Kithara when the user DB is empty (or operator forces re-seed). Module creates admin credentials (random secret), asks Kithara to persist user + binding (`ensure_user` / binding payload), and returns a **welcome fragment** (credentials text). Kithara writes that fragment to **its container log** — never to a public HTTP surface.
+
+```protobuf
+message SeedAdminRequest {
+  // correlation / operator hint — sketch
+}
+
+message SeedAdminResponse {
+  bool created = 1;
+  string welcome_log_text = 2;  // includes one-time credentials; Kithara logs only
+  // binding / ensure_user fields as on Authenticate — sketch
+}
+```
+
+Seeded admins **must** change credentials on first successful login (`must_rotate_credentials` on the user). The same flag can later force rotation for any user.
+
+**Security:** `SeedAdmin` is a privileged RPC. Only Kithara may invoke it — after Module Registry handshake, **mTLS** (client cert issued at Register) identifies Kithara→module calls. Modules must reject callers without a valid Kithara-issued cert. Same class of protection applies to other risky RPCs.
 
 ## Key messages
 
 ```protobuf
-message RegisterRequest {
-  string slug = 1;
-  string join_secret = 2;
-  string jwks_uri = 3;       // or inline JWKS; Argus may point at the IdP
-  // …
-}
-
 message ProviderDescriptor {
   string id = 1;           // provider slug (bes, argus, hecate, …)
   string display_name = 2;
@@ -52,6 +76,7 @@ message AuthenticateResponse {
   string refresh_token = 8;  // opaque to Kithara; module owns refresh semantics
   string token_type = 9;     // "Bearer"
   int64 expires_in = 10;
+  bool must_rotate_credentials = 11; // honor / set when user must change creds
 }
 
 message RefreshRequest {
@@ -69,22 +94,19 @@ message RefreshResponse {
 
 Exact field shapes are sketch-level; invariants:
 
-1. **JWT in, JWT out** for user API credentials.
-2. **Module owns issue + refresh**; Kithara verifies and authorizes.
+1. **JWT in, JWT out** for auth-module login credentials.
+2. **Module owns issue + refresh** for those JWTs; Kithara verifies and authorizes.
 3. **Kithara owns** user DB rows when the module asks to store them.
-
-## Registration
-
-Adapters join with a **join secret** (same pattern as source modules) and publish **JWKS** (or a JWKS URI) so Kithara can verify their JWTs. gRPC stays internal-only. Image/Compose: `bes`, `argus`, `hecate`. OTel: `bardie.auth.<slug>`.
+4. **Capabilities** decide whether Kithara may call `SeedAdmin` (etc.).
 
 ## How modules use the same RPCs
 
-| Module | `GetProviders` | `Authenticate` / tokens |
-|--------|----------------|-------------------------|
-| **Bes** | `form_schema` | Verifies password; **mints** JWT (+ refresh) |
-| **Argus** | `redirect` + authorize URL | Completes OIDC; **forwards** IdP access/refresh JWTs (refresh via IdP) |
-| **Hecate** | ceremony hints | Completes WebAuthn; **mints** JWT (+ refresh) |
+| Module | `GetProviders` | `Authenticate` / tokens | `seedAdmin` |
+|--------|----------------|-------------------------|-------------|
+| **Bes** | `form_schema` | Verifies password; **mints** JWT (+ refresh) | Yes |
+| **Argus** | `redirect` + authorize URL | Completes OIDC; **forwards** IdP JWTs | No (typical) |
+| **Hecate** | ceremony hints | Completes WebAuthn; **mints** JWT (+ refresh) | TBD |
 
-**Related:** [domains/auth-adapters.md](../domains/auth-adapters.md) · [interfaces/auth.md](auth.md) · [ADR 007](../adrs/007-auth-adapter-modules.md)
+**Related:** [grpc-module-registry](grpc-module-registry.md) · [domains/auth-adapters.md](../domains/auth-adapters.md) · [interfaces/auth.md](auth.md) · [ADR 007](../adrs/007-auth-adapter-modules.md)
 
 **Read next:** [uri-routing.md](uri-routing.md)

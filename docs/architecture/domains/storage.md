@@ -42,19 +42,23 @@ That way switching from local volume to MinIO (or the reverse) does not rewrite 
 
 ## Operator config (sketch)
 
-One backend for the whole stack (Compose env / secrets). Modules use the same settings (or dial Kithara for blob IO — implementation detail later; architecture: **one config surface**).
+One backend for the whole stack, configured **once on Kithara** (Compose env / secrets). Source modules do **not** get a parallel `BARDIE_STORAGE_*` surface — they put/get through Kithara (storage API and/or discovery of how to reach the shared backend).
 
 | Variable | Role |
 |----------|------|
 | `BARDIE_STORAGE_DRIVER` | `local` (MVP) \| `s3` \| later `webdav` |
-| `BARDIE_STORAGE_PATH` | Local driver root (volume or NFS/SMB mount) |
-| `BARDIE_STORAGE_S3_*` | Endpoint, bucket, region, credentials (S3-compatible) |
+| `BARDIE_STORAGE_PATH` | Local driver root (volume or NFS/SMB mount) — on **Kithara** |
+| `BARDIE_STORAGE_S3_*` | Endpoint, bucket, region, credentials (S3-compatible) — on **Kithara** |
 
 See [configuration](../operations/configuration.md) and [ADR 010](../adrs/010-blob-storage-backends.md).
 
 ## Access pattern
 
-Modules put/get (or stream) by storage key. Docs lock **Kithara-configured shared backend + opaque keys** — not per-module independent buckets as the primary model, and not a new public path for raw library files.
+Modules **dial Kithara** and put/get (stream) by storage key through a **thin storage RPC/API on Kithara**. Kithara’s driver interface (local / S3 / …) is the only place that knows the backend. Keep that hop as thin as practical — library writes are bulky; avoid extra copies and chatty round-trips where the driver allows.
+
+Docs lock **Kithara-configured shared backend + opaque keys + module→Kithara storage calls** — not per-module independent buckets or duplicated `BARDIE_STORAGE_*` on Magpie/Catbird, and not a new public path for raw library files.
+
+Exact streaming RPC shapes land with Phase 0 proto freeze.
 
 **Related:** [library-and-tunes.md](library-and-tunes.md) · [ADR 006](../adrs/006-stream-source-tune-data-model.md) · [ADR 010](../adrs/010-blob-storage-backends.md) · [operations/deployment.md](../operations/deployment.md)
 

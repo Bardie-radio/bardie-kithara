@@ -15,7 +15,7 @@ Bardie uses **live broadcast** semantics ([ADR 001](../adrs/001-broadcast-sync-m
 | Action | Effect |
 |--------|--------|
 | **Play** (empty) | Unpause — clear silence feeder; keep current job / queue head |
-| **Play** (body) | Start a **specific** track now (`module` + Tune id, search-result ref, or native URI/id) |
+| **Play** (body) | Start a **specific** track now (Tune id, search-result ref → Tune, or native URI/id → create Tune) |
 | **Quickplay** | Search → play first hit (source priority / user default + fallbacks) |
 | **Skip** | `StopTrack` current job → play next queue entry (FFmpeg stays up) |
 | **Pause** | Keep FFmpeg + FIFO + slug; Neck feeds silence |
@@ -35,7 +35,7 @@ Endpoint sketch and payloads: [rest-api](../interfaces/rest-api.md).
 
 ## Permissions
 
-Controlled by Struna **control access** mode — see [struna-access.md](struna-access.md). Protected control uses a short **guest code** exchanged for a **guest control JWT** (not the code on every request).
+Controlled by Struna **control access** mode — see [struna-access.md](struna-access.md). Protected control uses a short **guest code** exchanged for an **ephemeral guest user** + JWT (not the code on every request).
 
 **Related:** [ADR 001](../adrs/001-broadcast-sync-model.md) · [struna-access.md](struna-access.md) · [streams.md](streams.md) · [source-instances.md](source-instances.md)
 

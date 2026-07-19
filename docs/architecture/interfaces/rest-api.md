@@ -15,7 +15,7 @@ Client-facing HTTP API on Kithara (any client module). Base path: `/api`.
 |--------|----------------------|
 | User-aware clients | Bearer **user JWT** from an auth module |
 | Static clients | **Per-user credentials** for day-to-day; **join secret** only for managed-user admin |
-| Protected-control guests | Bearer **guest control JWT** after code exchange (Kithara-minted) |
+| Protected-control guests | Bearer **ephemeral guest JWT** after code exchange (Kithara-minted for a new ephemeral guest user) |
 
 See [auth.md](auth.md).
 
@@ -28,15 +28,15 @@ See [auth.md](auth.md).
 | POST | `/api/auth/refresh` | Module-side refresh → new JWT |
 | GET/POST | `/api/auth/callback` | Browser return for redirect flows (forwarded to module) |
 
-Kithara verifies **user** JWTs via module JWKS; it does not mint them. It **does** mint and verify **guest control JWTs** (see below).
+Kithara verifies **login** JWTs via module JWKS; it does not mint them. It **does** mint JWTs for **ephemeral guest users** (see below).
 
 ## Guest control
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/streams/{id}/guest/exchange` | Body: short guest code → Kithara-signed **guest control JWT** |
+| POST | `/api/streams/{id}/guest/exchange` | Body: short guest code → create **ephemeral guest user** + Kithara-signed JWT (+ refresh) |
 
-Rate-limited. Guest JWT is Bearer for subsequent control calls on **that Struna only** (`stream:control`). Do not send the guest code on every request. Details: [struna-access](../domains/struna-access.md).
+Rate-limited. Each exchange creates a **new** ephemeral guest user for that joiner (Struna-scoped; destroyed with the Struna). Do not send the guest code on every request. Details: [struna-access](../domains/struna-access.md).
 
 ## Strunas
 
@@ -52,7 +52,7 @@ Rate-limited. Guest JWT is Bearer for subsequent control calls on **that Struna 
 
 There is **no** separate `POST …/stop` — same lifecycle as `DELETE`.
 
-Create accepts slug, title, access modes, and **encode mode** (`compatibility` \| `quality`).
+Create accepts slug, title, and access modes. Listener encode profile is **operator/FFmpeg config** for MVP — not a user-facing create field until we prove we need it (see implementation plan).
 
 ## Play
 
@@ -67,9 +67,9 @@ Resolved intent — one of:
 
 | Shape | Fields (sketch) | Notes |
 |-------|-----------------|-------|
-| Library / tune | `module` + Tune id | Catbird / cached Magpie |
-| Search-result ref | `module` + track ref from a prior search | Opaque module ref |
-| Direct ref | `module` + module-native id / URI | **Starling:** stream URI. **Magpie:** may accept a YouTube URL as the id |
+| Library / tune | Tune id | Replay from library/history (any module, incl. sparse Starling Tunes) |
+| Search-result ref | Cached search result id → resolves to / creates Tune | Opaque; principal-scoped cache |
+| Direct ref | `module` + module-native id / URI | Creates/updates a Tune then plays (Magpie URL; Starling stream URI) |
 
 Empty body does **not** start a new track — it only clears pause (silence feeder off; current/next job resumes as designed).
 
@@ -89,16 +89,25 @@ Kithara picks the source with the **highest configured priority**, or the user�
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/streams/{id}/queue` | List queue |
-| POST | `/api/streams/{id}/queue` | Append a **specific** track (same body shapes as `play`) |
+| POST | `/api/streams/{id}/queue` | Append a **Tune** (same body shapes as `play` — resolve/create Tune then enqueue) |
 | POST | `/api/streams/{id}/quickqueue` | Quick-search and append the **first** result (same selection rules as `quickplay`) |
 | DELETE | `/api/streams/{id}/queue/{entryId}` | Remove queue entry |
 
 ## Search
 
+Search is **global** (not under a Struna id). Results are **cached** so the caller can play/queue by opaque result ref without re-searching. Cache entries are **principal-scoped**: only the durable user, managed user, or ephemeral guest that invoked the search may use those refs (prevents cross-user leakage).
+
+**Cache lifetime:**
+
+| Principal | Lifetime |
+|-----------|----------|
+| Ephemeral guest | Until Struna teardown (cache cleared with the guest) |
+| Durable / managed | Until that principal’s **next search** replaces it, or a **configurable timeout** elapses |
+
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/streams/{id}/quicksearch` | Plain-text query (`q=…`, optional `module=…`) |
-| POST | `/api/streams/{id}/search` | Regular (structured) search — body depends on the source module |
+| GET | `/api/search/quick` | Plain-text query (`q=…`, optional `module=…`) |
+| POST | `/api/search` | Regular (structured) search — body depends on the source module |
 
 ### Quicksearch (`GET`)
 
@@ -113,7 +122,9 @@ Structured payload per source. Modules **advertise search field capabilities** a
 | `title` | **Mandatory** on every searchable module; alone ≈ quicksearch |
 | `artist`, `owner`, … | Encouraged where they apply (`owner` = uploader / first querier for Magpie) |
 
-Omit `module` to fan out across sources that advertise `search` (and compatible fields). Results always include `module` slug + track ref for `play` / `queue`.
+Omit `module` to fan out across sources that advertise `search` (and compatible fields). Results always include `module` slug + track ref (and a cacheable result id) for `play` / `queue`.
+
+Quickplay / quickqueue still pick a source via configured **priority** (and later user default) — multi-source capable from day one; not Magpie-special-cased.
 
 ## Errors
 

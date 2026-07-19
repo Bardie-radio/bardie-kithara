@@ -8,7 +8,7 @@ The shared library caches Magpie downloads and Catbird uploads as binary blobs. 
 
 ## Decision
 
-- **Kithara owns** blob storage configuration and the **storage key** on each Tune (plus content type / size).
+- **Kithara owns** blob storage configuration and the optional **storage key** on each Tune (plus content type / size when present).
 - Source modules (Magpie, Catbird) read/write through a **shared storage contract** — one backend for the stack, not per-module buckets as the primary model.
 - **Drivers:** local filesystem (**MVP default**, `BARDIE_STORAGE_PATH`); **S3-compatible** next (AWS S3, MinIO, Garage, R2, B2, …); **WebDAV** later (NAS / Nextcloud).
 - NFS/SMB = mount under the local driver, not a separate driver.
@@ -20,7 +20,7 @@ The shared library caches Magpie downloads and Catbird uploads as binary blobs. 
 
 - Magpie cache-first and Catbird uploads share one coherent library.
 - Switching drivers does not rewrite Tune semantics — only config.
-- Modules need the shared storage settings (or Kithara-mediated blob IO); exact IO API is an implementation detail later.
+- Modules put/get via a **thin Kithara storage API** (modules dial Kithara) — no parallel `BARDIE_STORAGE_*` on Magpie/Catbird; drivers stay inside Kithara. Keep the hop cheap for bulky writes.
 
 ## Alternatives considered
 
