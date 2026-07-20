@@ -1,8 +1,6 @@
 namespace Bardie.Auth.Orchestrator;
 
-/// <summary>
-/// Placeholder for Auth Orchestrator DI and catalog (WP1b).
-/// </summary>
+/// <summary>Assembly marker for tests and reflection.</summary>
 public static class AuthOrchestratorMarker
 {
 }

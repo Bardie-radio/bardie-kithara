@@ -1,8 +1,6 @@
 namespace Bardie.ModuleChannel;
 
-/// <summary>
-/// Placeholder for ModuleChannel DI and mTLS helpers (WP1b).
-/// </summary>
+/// <summary>Assembly marker for tests and reflection.</summary>
 public static class ModuleChannelMarker
 {
 }

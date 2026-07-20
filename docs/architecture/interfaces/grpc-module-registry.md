@@ -18,21 +18,14 @@ service ModuleRegistry {
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
 }
 
-enum ModuleKind {
-  MODULE_KIND_UNSPECIFIED = 0;
-  MODULE_KIND_SOURCE = 1;
-  MODULE_KIND_AUTH = 2;
-  MODULE_KIND_CLIENT = 3;
-}
-
 message RegisterRequest {
   string slug = 1;                    // lowercase codename; operator may override via env
   string join_secret = 2;             // bootstrap trust (before mTLS cert exists)
-  ModuleKind kind = 3;
+  string kind = 3;                    // open string — not a closed enum
   repeated string capabilities = 4;   // e.g. search, play, pause, seedAdmin
-  string grpc_advertise_address = 5;  // where Kithara dials this module for work RPCs
+  string grpc_advertise_address = 5;  // where the host dials this module for work RPCs
   oneof details {
-    SourceRegisterDetails source = 10;
+    SourceRegisterDetails source = 10;   // optional; used when kind is well-known "source"
     AuthRegisterDetails auth = 11;
     ClientRegisterDetails client = 12;
   }
@@ -48,7 +41,7 @@ message SearchFieldDescriptor {
 }
 
 message AuthRegisterDetails {
-  string jwks_uri = 1;    // URL Kithara fetches for login-JWT verify
+  string jwks_uri = 1;    // URL host fetches for login-JWT verify
   string jwks_json = 2;   // optional inline JWKS snapshot at Register
 }
 
@@ -78,6 +71,19 @@ message HeartbeatResponse {
 }
 ```
 
+## Kind is open; Bardie well-known values are host convention
+
+`kind` is a **string**, not a protobuf enum. **ModuleChannel** never interprets it — only slug + certs matter for mTLS.
+
+| Kind value | Who defines it | Kithara Phase 1 behaviour |
+|------------|----------------|---------------------------|
+| `source` | Bardie well-known (`WellKnownModuleKinds`) | Upsert source orch catalog; use `details.source` when present |
+| `auth` | Bardie well-known | Upsert auth orch catalog; use `details.auth` when present |
+| `client` | Bardie well-known | Registry only |
+| any other non-empty string | Host / external project | **Register + Heartbeat still succeed**; no orch catalog projection |
+
+Other hosts can reuse the same join RPC + ModuleChannel and map their own kind strings (or ignore `oneof details`). Bardie-shaped `oneof` branches stay optional typed bags for well-known kinds — they are not a closed taxonomy of the mesh.
+
 ## Dial rules
 
 | Direction | When |
@@ -95,16 +101,18 @@ Per-call dials keep operations atomic: one RPC = one span, one auth decision, ea
    - **`preshared`**: operator pre-places CA + module client cert/key offline; response PEM key fields stay **empty**; clients must not require them.
 3. After pairing, the **whole gRPC surface** (both directions) uses **mTLS**. `Heartbeat` renews liveness (and may later rotate certs); it does **not** carry the join secret.
 
-The join secret is only the bootstrap; it is not a standing impersonation key for work RPCs once mTLS is up.
+The join secret is only the bootstrap; it is not a standing impersonation key for work RPCs once mTLS is up. **Caveat:** anyone who holds the join secret can still call `Register` again whenever the registry accepts that slug (restart, TTL gap, cold start) and, in **auto**, receive a new client key — see [security-audit-module-mesh](../operations/security-audit-module-mesh.md) (`MESH-REG-001`).
 
 ## Rules
 
 | Rule | Why |
 |------|-----|
 | **All modules Register over gRPC** | One join surface; UI modules are not “REST-only citizens” |
-| **Join secret required on Register** | Bootstrap identity for source, auth, client |
-| **`oneof details` matches `kind`** | JWKS / search schema / client auth mode stay typed without parallel RPCs |
-| **Capabilities advertised at Register** | Kithara routes only what the module claims (e.g. auth `seedAdmin`, source `pause`) |
+| **Join secret required on Register** | Bootstrap identity for every kind |
+| **`kind` is an open string** | Mesh join stays reusable; product taxonomies live in the host |
+| **Well-known kinds may carry typed `oneof details`** | JWKS / search schema / client auth mode without parallel RPCs |
+| **Unknown kinds are registry-only (Phase 1)** | Still mTLS-paired; no Auth/Source catalog upsert |
+| **Capabilities advertised at Register** | Host routes only what the module claims (e.g. auth `seedAdmin`, source `pause`) |
 | **Static clients advertise a permission ceiling** | Managed users cannot be granted rights above what the module declared at handshake |
 | **Heartbeat is mTLS-only** | No join secret on the steady-state path |
 | **REST `/api` is for end users** | Client modules call REST to turn SPI into UX — not to join the mesh |
@@ -113,12 +121,12 @@ Work RPCs live on **per-kind contracts** the module hosts at `grpc_advertise_add
 
 ## Client modules
 
-Same `Register` as everyone else: join secret + `kind=CLIENT` + `ClientRegisterDetails` (`user-aware` \| `static` + permission ceiling when static). Day-to-day Struna control still uses REST `/api` — see [clients](../domains/clients.md).
+Same `Register` as everyone else: join secret + `kind=client` + optional `ClientRegisterDetails` (`user-aware` \| `static` + permission ceiling when static). Day-to-day Struna control still uses REST `/api` — see [clients](../domains/clients.md).
 
 ## Observability
 
 Each work RPC is its own client call from Kithara → module: propagate W3C `traceparent`, record module slug + RPC name. Module OTel names stay `bardie.source.*` / `bardie.auth.*` / `bardie.plume` (etc.).
 
-**Related:** [grpc-source-module](grpc-source-module.md) · [grpc-auth-adapter](grpc-auth-adapter.md) · [clients](../domains/clients.md) · [ADR 003](../adrs/003-grpc-control-plane.md)
+**Related:** [grpc-source-module](grpc-source-module.md) · [grpc-auth-adapter](grpc-auth-adapter.md) · [clients](../domains/clients.md) · [ADR 003](../adrs/003-grpc-control-plane.md) · [security-audit-module-mesh](../operations/security-audit-module-mesh.md)
 
 **Read next:** [grpc-source-module.md](grpc-source-module.md)

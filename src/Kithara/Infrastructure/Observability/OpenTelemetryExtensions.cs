@@ -22,6 +22,7 @@ public static class OpenTelemetryExtensions
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddGrpcClientInstrumentation()
+                .AddEntityFrameworkCoreInstrumentation()
                 .AddOtlpExporter())
             .WithMetrics(metrics => metrics
                 .AddAspNetCoreInstrumentation()

@@ -4,19 +4,15 @@ package bardie.modules.v1;
 
 option csharp_namespace = "Bardie.Modules.V1";
 
-// ModuleRegistry — modules dial Kithara to join the mesh.
+// ModuleRegistry — modules dial the host to join the mesh.
 // v0.1 draft: RPC set and dial rules are frozen; see docs/architecture/interfaces/grpc-module-registry.md
+//
+// `kind` is an open string (not a closed enum). Hosts interpret well-known values;
+// unknown kinds still Register + Heartbeat via ModuleChannel mTLS.
 
 service ModuleRegistry {
   rpc Register(RegisterRequest) returns (RegisterResponse);
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse);
-}
-
-enum ModuleKind {
-  MODULE_KIND_UNSPECIFIED = 0;
-  MODULE_KIND_SOURCE = 1;
-  MODULE_KIND_AUTH = 2;
-  MODULE_KIND_CLIENT = 3;
 }
 
 message RegisterRequest {
@@ -24,11 +20,14 @@ message RegisterRequest {
   string slug = 1;
   // Bootstrap trust before mTLS cert exists. Not used on Heartbeat.
   string join_secret = 2;
-  ModuleKind kind = 3;
+  // Open module kind (e.g. "source", "auth", "client", or a host-defined value).
+  string kind = 3;
   // e.g. search, play, pause, seedAdmin
   repeated string capabilities = 4;
-  // Where Kithara dials this module for per-call work RPCs.
+  // Where the host dials this module for per-call work RPCs.
   string grpc_advertise_address = 5;
+  // Optional typed payloads for well-known kinds. Unknown kinds leave this unset
+  // (or ignore host-unknown branches). Field numbers reserved for Bardie-shaped details.
   oneof details {
     SourceRegisterDetails source = 10;
     AuthRegisterDetails auth = 11;
@@ -47,7 +46,7 @@ message SearchFieldDescriptor {
 }
 
 message AuthRegisterDetails {
-  // URL Kithara fetches for login-JWT verify.
+  // URL the host fetches for login-JWT verify.
   string jwks_uri = 1;
   // Optional inline JWKS snapshot at Register.
   string jwks_json = 2;
