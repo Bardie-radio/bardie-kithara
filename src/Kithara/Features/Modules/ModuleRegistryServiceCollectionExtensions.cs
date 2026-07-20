@@ -22,6 +22,7 @@ public static class ModuleRegistryServiceCollectionExtensions
         });
 
         services.AddSingleton<InMemoryModuleRegistry>();
+        services.AddSingleton<ModuleRegistryOperations>();
         services.AddHostedService<ModuleRegistryJanitor>();
         services.AddGrpc(options =>
         {

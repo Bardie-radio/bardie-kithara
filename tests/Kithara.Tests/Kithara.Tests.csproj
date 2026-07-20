@@ -8,6 +8,10 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Grpc.AspNetCore" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio">
       <PrivateAssets>all</PrivateAssets>
@@ -19,9 +23,11 @@
     </PackageReference>
   </ItemGroup>
 
-  <!--
-    Host integration tests (WebApplicationFactory) need Microsoft.AspNetCore.App 10 runtime.
-    Re-add ProjectReference to src/Kithara + Microsoft.AspNetCore.Mvc.Testing when that runtime is available.
-  -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Kithara\Kithara.csproj" />
+    <ProjectReference Include="..\..\libs\Bardie.ModuleChannel\Bardie.ModuleChannel.csproj" />
+    <ProjectReference Include="..\..\libs\Bardie.Auth.Orchestrator\Bardie.Auth.Orchestrator.csproj" />
+    <ProjectReference Include="..\..\libs\Bardie.Source.Orchestrator\Bardie.Source.Orchestrator.csproj" />
+  </ItemGroup>
 
 </Project>

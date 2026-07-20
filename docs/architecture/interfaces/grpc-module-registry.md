@@ -127,6 +127,6 @@ Same `Register` as everyone else: join secret + `kind=client` + optional `Client
 
 Each work RPC is its own client call from Kithara → module: propagate W3C `traceparent`, record module slug + RPC name. Module OTel names stay `bardie.source.*` / `bardie.auth.*` / `bardie.plume` (etc.).
 
-**Related:** [grpc-source-module](grpc-source-module.md) · [grpc-auth-adapter](grpc-auth-adapter.md) · [clients](../domains/clients.md) · [ADR 003](../adrs/003-grpc-control-plane.md) · [security-audit-module-mesh](../operations/security-audit-module-mesh.md)
+**Related:** [grpc-source-module](grpc-source-module.md) · [grpc-auth-adapter](grpc-auth-adapter.md) · [clients](../domains/clients.md) · [module-channel](../operations/module-channel.md) · [ADR 003](../adrs/003-grpc-control-plane.md) · [security-audit-module-mesh](../operations/security-audit-module-mesh.md)
 
 **Read next:** [grpc-source-module.md](grpc-source-module.md)

@@ -59,15 +59,15 @@ public class ModuleChannelCertificateTests
         var issuer = provider.GetRequiredService<IModuleCertificateIssuer>();
 
         await store.EnsureLoadedAsync();
-        issuer.ProvisionPresharedClientCertificate("bes");
+        var provisioned = issuer.ProvisionPresharedClientCertificate("bes");
+        Assert.False(string.IsNullOrWhiteSpace(provisioned.ClientPrivateKeyPem));
 
         Assert.True(store.TryGetPresharedClientExpiry("bes", out var expires));
         Assert.True(expires > DateTimeOffset.UtcNow);
 
-        // Wire shape for preshared: host may return CA metadata only — never private key PEMs.
-        var wirePrivateKeyPem = string.Empty;
-        Assert.True(string.IsNullOrEmpty(wirePrivateKeyPem));
-
+        // Wire shape for Register in preshared mode: host returns CA metadata only —
+        // never the provisioned private key. (Full Register path covered in Kithara.Tests.)
+        Assert.False(string.IsNullOrWhiteSpace(store.CaCertificatePem));
         Assert.False(store.TryGetPresharedClientExpiry("missing-module", out _));
     }
 }

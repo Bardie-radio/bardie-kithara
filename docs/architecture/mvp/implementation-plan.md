@@ -64,19 +64,15 @@ flowchart TB
 
 ## Current baseline (honest)
 
-In-tree code is a **spike**, not a product core:
+**Phase 1 skeleton is in tree** (`src/Kithara`, `libs/Bardie.*`, Module Registry + ModuleChannel mTLS, ADR-006 EF, OTel). Spike Controllers / Playlist / Neck are gone from runtime — see [spike/prototype-neck-ffmpeg](../spike/prototype-neck-ffmpeg.md) for historical FFmpeg notes only.
 
 
-| Area    | Today                                                    | Target                                          |
+| Area    | Today (Phase 1)                                          | Later phases                                    |
 | ------- | -------------------------------------------------------- | ----------------------------------------------- |
-| Layout  | Controllers + singleton `NeckService`                    | Feature-first Minimal APIs + hosted supervisors |
-| Models  | `Struna` without slug/access; `Tune`↔`Playlist` conflict | ADR 006 library + queue intents                 |
-| Audio   | Playlist concat into FFmpeg                              | Session FIFO → FFmpeg → Stream Server           |
-| Modules | None                                                     | Magpie + Bes over gRPC; Plume over REST         |
-
-
-Treat spike files as reference for “FFmpeg from .NET works,” then replace — see [spike/prototype-neck-ffmpeg](../spike/prototype-neck-ffmpeg.md).
-
+| Layout  | Feature folders + packable orch / ModuleChannel libs     | Fill Auth/Search/Streams/Listen behaviour       |
+| Models  | ADR 006 EF entities + migrations                         | Control REST + queue/play                       |
+| Audio   | Not yet                                                  | Session FIFO → FFmpeg → Stream Server (4–5)     |
+| Modules | Registry join + mTLS; orch catalogs                      | Magpie + Bes work RPCs (2–3); Plume REST (7)    |
 ## Phase map
 
 Phases are **dependency-ordered**. Later phases may start stubs earlier, but do not ship behaviour that bypasses an unfrozen contract.
@@ -153,44 +149,44 @@ Same contract on Bes/Magpie/Plume from their first runnable container ([ADR 008]
 
 ## Phase 1 — Kithara skeleton
 
+**Status: current (implemented in-repo).** Dual listeners, Module Registry, ModuleChannel mTLS (`auto` \| `preshared`), orch lib scaffolds, ADR-006 EF, OTel `bardie.kithara`.
+
 **Why:** Everything else hangs off registry, persistence, HTTP/gRPC hosts, and telemetry plumbing.
 
 ### Work
 
-1. **Feature-first layout** (replace layer dump) — foreshadow from [02-internal-structure](../overview/02-internal-structure.md):
+1. **Feature-first layout** under `src/Kithara` + packable `libs/` (Auth/Source orch, ModuleChannel) — see [02-internal-structure](../overview/02-internal-structure.md) and [module-channel](../operations/module-channel.md):
 
 ```text
-Features/
-  Streams/
-  Auth/
-  Modules/
-  Streaming/
-  Library/          # Tune metadata + storage keys
-Infrastructure/
-  Persistence/      # EF + IDbContextFactory
-  Observability/    # OTel registration helpers
-  Neck/             # hosted later in Phase 4
-  Storage/          # local driver MVP
+src/Kithara/
+  Features/
+    Modules/        # Module Registry gRPC (host)
+    Auth/ Search/ Streams/ Streaming/ Library/   # Bardie wrappers (filled later)
+  Infrastructure/
+    Persistence/ Observability/ Storage/ Neck/
+libs/
+  Bardie.ModuleChannel/
+  Bardie.Auth.Orchestrator/
+  Bardie.Source.Orchestrator/
 ```
 
-2. Config: `DbProvider` / `DbConnectionString`, `BARDIE_JOIN_SECRETS`, `OTEL_EXPORTER_OTLP_ENDPOINT` ([configuration](../operations/configuration.md)).
+2. Config: `DbProvider` / `DbConnectionString`, `BARDIE_JOIN_SECRETS`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `BARDIE_MODULE_MTLS_BOOTSTRAP`, `BARDIE_GRPC_TLS_*` ([configuration](../operations/configuration.md)).
 3. **OpenTelemetry bootstrap** in `Program.cs`: OTLP exporter, `service.name=bardie.kithara`, ASP.NET + gRPC + HttpClient + EF auto-instrumentation; W3C propagation on. Safe when collector is absent.
-4. EF migrations for core tables (empty Struna/Tune shapes OK if fields match ADR 006).
-5. **Module Registry** service: accept register + heartbeat authenticated by join secret; track slug, capabilities, advertise address, JWKS (auth), search schema (sources). Registry RPCs appear as spans automatically once gRPC instrumentation is on.
-6. Dual listeners: HTTP `:8080`, gRPC `:5000` (internal).
+4. EF migrations for core tables (ADR 006 shapes).
+5. **Module Registry** service: `Register` authenticated by **join secret**; issues client certs in `auto` mode (or confirms preshared material); **Heartbeat authenticated by mTLS** (not join secret). Track slug, capabilities, advertise address, JWKS (auth), search schema (sources); project AUTH/SOURCE into orch catalogs. Registry RPCs appear as spans once gRPC instrumentation is on.
+6. Dual listeners: HTTP `:8080`, gRPC HTTPS `:5000` (internal) via ModuleChannel helpers.
 7. Health/readiness endpoints suitable for Compose.
 
 ### Exit criteria
 
 - Empty Kithara boots with SQLite.
-- A dummy module can register with a join secret and appear in registry state.
+- A dummy module can register with a join secret and appear in registry state (and orch catalog for AUTH/SOURCE).
 - With a collector configured, a health or register request produces a trace for `bardie.kithara`.
 - No playlist-centric API.
 
 ### Explicitly not yet
 
 - Real Bes/Magpie behaviour, FFmpeg, ICY, Plume.
-
 ---
 
 
@@ -480,4 +476,4 @@ Design-review open questions are **closed**. Phase 0 can proceed from the locked
 - [glossary](../glossary.md) · [grpc-module-registry](../interfaces/grpc-module-registry.md) · [auth](../interfaces/auth.md)
 - Org: [05-deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md)
 
-**Read next:** [v0.1-milestones.md](v0.1-milestones.md) · start Phase 0 contract freeze.
+**Read next:** [v0.1-milestones.md](v0.1-milestones.md) · Phase 1 skeleton is current — continue with Phase 2 (Auth vertical).
