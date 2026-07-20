@@ -9,15 +9,10 @@
 
   <ItemGroup>
     <PackageReference Include="Grpc.Net.Client" />
-    <PackageReference Include="Google.Protobuf" />
-    <PackageReference Include="Grpc.Tools">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="..\Kithara\Protos\module_registry.proto" GrpcServices="Client" />
+    <ProjectReference Include="..\..\libs\Bardie.Contracts\Bardie.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

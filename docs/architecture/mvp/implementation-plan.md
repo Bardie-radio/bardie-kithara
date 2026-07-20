@@ -64,15 +64,16 @@ flowchart TB
 
 ## Current baseline (honest)
 
-**Phase 1 skeleton is in tree** (`src/Kithara`, `libs/Bardie.*`, Module Registry + ModuleChannel mTLS, ADR-006 EF, OTel). Spike Controllers / Playlist / Neck are gone from runtime — see [spike/prototype-neck-ffmpeg](../spike/prototype-neck-ffmpeg.md) for historical FFmpeg notes only.
+**Phase 1 skeleton is complete** (`src/Kithara`, `libs/Bardie.*`, Module Registry + ModuleChannel mTLS, ADR-006 EF, OTel). **Phase 2 (Auth vertical) is current.** Spike Controllers / Playlist / Neck are gone from runtime — see [spike/prototype-neck-ffmpeg](../spike/prototype-neck-ffmpeg.md) for historical FFmpeg notes only.
 
 
-| Area    | Today (Phase 1)                                          | Later phases                                    |
-| ------- | -------------------------------------------------------- | ----------------------------------------------- |
-| Layout  | Feature folders + packable orch / ModuleChannel libs     | Fill Auth/Search/Streams/Listen behaviour       |
-| Models  | ADR 006 EF entities + migrations                         | Control REST + queue/play                       |
-| Audio   | Not yet                                                  | Session FIFO → FFmpeg → Stream Server (4–5)     |
-| Modules | Registry join + mTLS; orch catalogs                      | Magpie + Bes work RPCs (2–3); Plume REST (7)    |
+| Area    | Today (Phase 2)                                                      | Later phases                                |
+| ------- | -------------------------------------------------------------------- | ------------------------------------------- |
+| Layout  | Feature folders + packable orch / ModuleChannel / Contracts libs     | Fill Search/Streams/Listen behaviour        |
+| Models  | ADR 006 EF entities + migrations                                     | Control REST + queue/play                   |
+| Auth    | Contracts freeze; orch + Bes + JWT verify in progress                | Guest exchange REST (6); Plume login UI (7) |
+| Audio   | Not yet                                                              | Session FIFO → FFmpeg → Stream Server (4–5) |
+| Modules | Registry join + mTLS; orch catalogs; `Bardie.Contracts` package SoT  | Magpie work RPCs (3); Plume REST (7)        |
 ## Phase map
 
 Phases are **dependency-ordered**. Later phases may start stubs earlier, but do not ship behaviour that bypasses an unfrozen contract.
@@ -114,10 +115,10 @@ Same contract on Bes/Magpie/Plume from their first runnable container ([ADR 008]
 
 ### Work
 
-1. **Own the** `.proto` **files in Kithara** and publish a **versioned contract package** for module authors — single source of truth for:
+1. **Own the** `.proto` **files in** `libs/Bardie.Contracts` **and publish a versioned package** (`Bardie.Contracts`) for module authors — single source of truth for:
   - `ModuleRegistry` on Kithara (modules dial in; mTLS cert issued on success)
-  - `SourceModule` / `AuthAdapter` work RPCs (Kithara dials per call)
-  - Thin storage put/get on Kithara (modules dial)
+  - `AuthAdapter` work RPCs (Kithara dials per call) — `SourceModule` follows in Phase 3 freeze
+  - Thin storage put/get on Kithara (modules dial) — later
 2. Promote interface pages from “sketch” to **v0.1 draft** (field names may still evolve; RPC set and dial rules must not).
 3. Lock REST path set in [rest-api](../interfaces/rest-api.md) for MVP verbs (auth, streams, play, queue, **global** search, guest exchange).
 4. Lock **target EF model** outline: `User` kinds, `UserAuthBinding`, `Struna`, `Tune`, `QueueEntry`, search-result cache — discard prototype `Playlist` as product schema ([ADR 006](../adrs/006-stream-source-tune-data-model.md)).
@@ -138,7 +139,7 @@ Same contract on Bes/Magpie/Plume from their first runnable container ([ADR 008]
 
 | Repo                | Follow-up                                                                 |
 | ------------------- | ------------------------------------------------------------------------- |
-| **magpie**, **bes** | Import / generate from frozen protos                                      |
+| **magpie**, **bes** | `PackageReference` / sibling `ProjectReference` to `Bardie.Contracts`     |
 | **plume**           | REST client stubs from rest-api                                           |
 | **org**             | Join-secret / volume notes in deployment narrative when attach is decided |
 
@@ -149,7 +150,7 @@ Same contract on Bes/Magpie/Plume from their first runnable container ([ADR 008]
 
 ## Phase 1 — Kithara skeleton
 
-**Status: current (implemented in-repo).** Dual listeners, Module Registry, ModuleChannel mTLS (`auto` \| `preshared`), orch lib scaffolds, ADR-006 EF, OTel `bardie.kithara`.
+**Status: complete.** Dual listeners, Module Registry, ModuleChannel mTLS (`auto` \| `preshared`), orch lib scaffolds, ADR-006 EF, OTel `bardie.kithara`.
 
 **Why:** Everything else hangs off registry, persistence, HTTP/gRPC hosts, and telemetry plumbing.
 
@@ -165,6 +166,7 @@ src/Kithara/
   Infrastructure/
     Persistence/ Observability/ Storage/ Neck/
 libs/
+  Bardie.Contracts/
   Bardie.ModuleChannel/
   Bardie.Auth.Orchestrator/
   Bardie.Source.Orchestrator/
@@ -192,6 +194,8 @@ libs/
 
 
 ## Phase 2 — Auth vertical (Bes + Orchestrator)
+
+**Status: current.** Contracts package + Auth Orchestrator + Bes + JWT verify + bootstrap `seedAdmin`.
 
 **Why:** Control APIs need a verified identity. Auth stays behind Kithara (BFF).
 
@@ -476,4 +480,4 @@ Design-review open questions are **closed**. Phase 0 can proceed from the locked
 - [glossary](../glossary.md) · [grpc-module-registry](../interfaces/grpc-module-registry.md) · [auth](../interfaces/auth.md)
 - Org: [05-deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md)
 
-**Read next:** [v0.1-milestones.md](v0.1-milestones.md) · Phase 1 skeleton is current — continue with Phase 2 (Auth vertical).
+**Read next:** [v0.1-milestones.md](v0.1-milestones.md) · Phase 2 (Auth vertical) is current — finish Bes + orch + JWT `/api/auth/*`, then Phase 3 (Source vertical) can run in parallel.

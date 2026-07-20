@@ -54,7 +54,7 @@ How **Kithara** is structured inside one process. Ecosystem layout (Plume, modul
 
 ## Solution layout
 
-Root buckets: `src/` (host + DummyRegistrar), `libs/` (packable ModuleChannel + orchestrators), `tests/`, `docs/`. Prefer **feature-first** folders and Minimal APIs ([aspnet team rules](../../../.cursor/rules/aspnet.mdc) in repo):
+Root buckets: `src/` (host + DummyRegistrar), `libs/` (packable Contracts + ModuleChannel + orchestrators), `tests/`, `docs/`. Prefer **feature-first** folders and Minimal APIs ([aspnet team rules](../../../.cursor/rules/aspnet.mdc) in repo):
 
 ```text
 src/Kithara/
@@ -70,8 +70,8 @@ src/Kithara/
     Observability/# OTel registration (service.name=bardie.kithara)
     Neck/         # hosted FFmpeg supervisor + session FIFO + silence
     Storage/      # blob drivers (local MVP) — backing store for source orch storage API
-  Protos/         # ModuleRegistry (v0.1 draft)
 libs/
+  Bardie.Contracts/           # packable protos (ModuleRegistry, AuthAdapter)
   Bardie.ModuleChannel/
   Bardie.Auth.Orchestrator/
   Bardie.Source.Orchestrator/

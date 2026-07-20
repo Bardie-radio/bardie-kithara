@@ -26,13 +26,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\libs\Bardie.Contracts\Bardie.Contracts.csproj" />
     <ProjectReference Include="..\..\libs\Bardie.ModuleChannel\Bardie.ModuleChannel.csproj" />
     <ProjectReference Include="..\..\libs\Bardie.Auth.Orchestrator\Bardie.Auth.Orchestrator.csproj" />
     <ProjectReference Include="..\..\libs\Bardie.Source.Orchestrator\Bardie.Source.Orchestrator.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Protobuf Include="Protos\module_registry.proto" GrpcServices="Server" />
   </ItemGroup>
 
 </Project>
