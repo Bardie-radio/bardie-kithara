@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>Kithara</RootNamespace>
+    <AssemblyName>Kithara</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <UserSecretsId>a89934c3-5695-421e-990b-e1aee1d0610c</UserSecretsId>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.GrpcNetClient" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\libs\Bardie.ModuleChannel\Bardie.ModuleChannel.csproj" />
+    <ProjectReference Include="..\..\libs\Bardie.Auth.Orchestrator\Bardie.Auth.Orchestrator.csproj" />
+    <ProjectReference Include="..\..\libs\Bardie.Source.Orchestrator\Bardie.Source.Orchestrator.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Protos\module_registry.proto" GrpcServices="Server" />
+  </ItemGroup>
+
+</Project>

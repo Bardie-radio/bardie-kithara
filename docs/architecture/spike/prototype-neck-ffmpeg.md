@@ -17,7 +17,7 @@ flowchart LR
   end
 ```
 
-[Services/Neck.cs](../../Services/Neck.cs) is a **technical spike**, not the target architecture.
+The former root `Services/Neck.cs` spike has been removed from the tree (Phase 1 reshape). This page records what that spike proved and what to discard.
 
 ## What the spike proved
 

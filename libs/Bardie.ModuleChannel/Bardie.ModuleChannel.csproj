@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bardie.ModuleChannel</RootNamespace>
+    <AssemblyName>Bardie.ModuleChannel</AssemblyName>
+    <IsPackable>true</IsPackable>
+    <PackageId>Bardie.ModuleChannel</PackageId>
+    <Description>mTLS and gRPC channel helpers for Bardie module mesh.</Description>
+  </PropertyGroup>
+
+</Project>

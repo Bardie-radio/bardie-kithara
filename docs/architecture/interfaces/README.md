@@ -5,7 +5,7 @@ External and inter-service contracts.
 | Page | Contract |
 |------|----------|
 | [rest-api.md](rest-api.md) | End-user HTTP API (UI modules call this) |
-| [grpc-module-registry.md](grpc-module-registry.md) | All modules dial Kithara to Register |
+| [grpc-module-registry.md](grpc-module-registry.md) | All modules dial Kithara to Register (**v0.1 draft**) |
 | [grpc-source-module.md](grpc-source-module.md) | Source work RPCs (incl. pause) |
 | [grpc-auth-adapter.md](grpc-auth-adapter.md) | Auth work RPCs (incl. seedAdmin) |
 | [uri-routing.md](uri-routing.md) | Public URL map |

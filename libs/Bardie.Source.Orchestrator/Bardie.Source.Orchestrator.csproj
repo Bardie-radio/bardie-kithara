@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bardie.Source.Orchestrator</RootNamespace>
+    <AssemblyName>Bardie.Source.Orchestrator</AssemblyName>
+    <IsPackable>true</IsPackable>
+    <PackageId>Bardie.Source.Orchestrator</PackageId>
+    <Description>Source module orchestrator library for Bardie hosts.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bardie.ModuleChannel\Bardie.ModuleChannel.csproj" />
+  </ItemGroup>
+
+</Project>
