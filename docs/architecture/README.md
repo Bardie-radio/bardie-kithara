@@ -30,7 +30,7 @@ Deep-dive architecture for **Kithara** — the Bardie core backend. For ecosyste
 
 **New contributor** — `overview/01` → `glossary` → `domains/source-instances` → `adrs/001`–`004`
 
-**Module author** — `interfaces/grpc-source-module` → `interfaces/grpc-auth-adapter` → `operations/observability`
+**Module author** — `interfaces/grpc-source-module` → `interfaces/grpc-blob-storage` → `interfaces/grpc-library` → `interfaces/grpc-auth-adapter` → `operations/observability`
 
 **Self-hoster** — [org deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md) → `operations/deployment` (this container) → `mvp/v0.1-scope` → `interfaces/uri-routing`
 
@@ -57,6 +57,8 @@ Deep-dive architecture for **Kithara** — the Bardie core backend. For ecosyste
 - [grpc-module-registry](interfaces/grpc-module-registry.md)
 - [grpc-source-module](interfaces/grpc-source-module.md)
 - [grpc-auth-adapter](interfaces/grpc-auth-adapter.md)
+- [grpc-blob-storage](interfaces/grpc-blob-storage.md)
+- [grpc-library](interfaces/grpc-library.md)
 - [uri-routing](interfaces/uri-routing.md)
 - [http-stream-output](interfaces/http-stream-output.md)
 - [streaming-stack](interfaces/streaming-stack.md)

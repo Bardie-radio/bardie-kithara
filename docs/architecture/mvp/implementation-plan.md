@@ -69,11 +69,11 @@ flowchart TB
 
 | Area    | Today (Phase 3)                                                      | Later phases                                |
 | ------- | -------------------------------------------------------------------- | ------------------------------------------- |
-| Layout  | Feature folders + packable orch / ModuleChannel / Contracts libs     | Fill Search/Streams/Listen behaviour        |
-| Models  | ADR 006 EF entities + migrations                                     | Control REST + queue/play                   |
+| Layout  | Feature folders + packable orch / ModuleChannel / Contracts libs     | Fill remaining Streams/Listen behaviour     |
+| Models  | ADR 006 EF entities + migrations                                     | Full queue CRUD + guest ACL surface (6)     |
 | Auth    | Orch + Bes + JWT Bearer `/api/auth/*` + `seedAdmin` bootstrap        | Guest exchange REST (6); Plume login UI (7) |
-| Audio   | Not yet                                                              | Session FIFO → FFmpeg → Stream Server (4–5) |
-| Modules | Registry + mTLS; Bes live; Magpie work RPCs next                     | Plume REST (7)                              |
+| Audio   | Session FIFO + Magpie PCM proof (in progress)                        | FFmpeg supervisor → Stream Server (4–5)     |
+| Modules | Registry + mTLS; Bes live; Magpie source RPCs (in progress)          | Plume REST (7)                              |
 ## Phase map
 
 Phases are **dependency-ordered**. Later phases may start stubs earlier, but do not ship behaviour that bypasses an unfrozen contract.
@@ -91,7 +91,7 @@ Phases are **dependency-ordered**. Later phases may start stubs earlier, but do 
 | **8** | Compose + verify | Reference stack, join secrets, **confirm** OTLP → external collector end-to-end |
 
 
-Phases 2 and 3 can run **in parallel** after Phase 0–1. Phases 4–6 are mostly Kithara. Phase 7 needs Phase 2 + enough of 6. Phase 8 needs all MVP apps green enough to compose — OTel export itself is already live from Phase 1 / each module’s first boot.
+Phases 1–2 are **complete**; Phase 3 is the active track (source protocol could have overlapped Phase 2 after Phase 1). Phases 4–6 are mostly Kithara. Phase 7 needs Phase 2 + enough of 6. Phase 8 needs all MVP apps green enough to compose — OTel export itself is already live from Phase 1 / each module’s first boot.
 
 ### OTel in practice (ASP.NET / modules)
 
@@ -117,9 +117,9 @@ Same contract on Bes/Magpie/Plume from their first runnable container ([ADR 008]
 
 1. **Own the** `.proto` **files in** `libs/Bardie.Contracts` **and publish a versioned package** (`Bardie.Contracts`) for module authors — single source of truth for:
   - `ModuleRegistry` on Kithara (modules dial in; mTLS cert issued on success)
-  - `AuthAdapter` work RPCs (Kithara dials per call) — `SourceModule` follows in Phase 3 freeze
-  - Thin storage put/get on Kithara (modules dial) — later
-2. Promote interface pages from “sketch” to **v0.1 draft** (field names may still evolve; RPC set and dial rules must not).
+  - `AuthAdapter` work RPCs (Kithara dials per call) — **done** in Phase 2
+  - `SourceModule` + `BlobStorage` + `Library` — **Phase 3 freeze** (current)
+2. Promote interface pages from “sketch” to **v0.1 draft** (field names may still evolve; RPC set and dial rules must not). Auth + registry are draft; source/storage/library promote with the Phase 3 freeze.
 3. Lock REST path set in [rest-api](../interfaces/rest-api.md) for MVP verbs (auth, streams, play, queue, **global** search, guest exchange).
 4. Lock **target EF model** outline: `User` kinds, `UserAuthBinding`, `Struna`, `Tune`, `QueueEntry`, search-result cache — discard prototype `Playlist` as product schema ([ADR 006](../adrs/006-stream-source-tune-data-model.md)).
 5. Document shared **audio volume** + session endpoint conventions ([ADR 004](../adrs/004-source-instance-socket-audio-plane.md)).
@@ -247,15 +247,15 @@ libs/
 
 1. Registry dials module advertise address for `Search` / `StartTrack` / `StopTrack` / `TrackStatus`.
 2. Temporary **dev harness**: create a session FIFO path, call Magpie `StartTrack`, verify PCM bytes appear (even before Stream Server).
-3. Storage interface MVP: local driver + opaque keys; Magpie put/get path (resolve open question).
-4. Library write path: create/update `Tune` when Magpie reports cache miss → download (orchestration as designed after storage attach is chosen).
+3. Storage interface MVP: local driver + opaque keys under `tunes/<source_slug>/…`; Magpie put/get via `BlobStorage`.
+4. Library write path: Magpie dials `Library.EnsureTune` after Put on cache miss (Kithara owns EF upsert).
 
 
 
 ### Work (Magpie — parallel)
 
-1. Implement source contract: register, search (+ URL/id fallback), track jobs writing **s16le / 48 kHz / stereo** to `fifo_path`.
-2. Cache-first Tune resolve via storage contract.
+1. Implement source contract: register, search (+ URL/id fallback), track jobs writing **s16le / 48 kHz / stereo** to `audio_endpoint`.
+2. Cache-first Tune resolve via storage contract (`tunes/magpie/…` keys).
 3. Honor `StopTrack` / `PauseTrack` / `ResumeTrack`; advertise `search` | `play` | `pause`.
 
 
@@ -479,7 +479,7 @@ Design-review open questions are **closed**. Phase 0 can proceed from the locked
 ## Related
 
 - [v0.1-scope.md](v0.1-scope.md) · [v0.1-milestones.md](v0.1-milestones.md)
-- [glossary](../glossary.md) · [grpc-module-registry](../interfaces/grpc-module-registry.md) · [auth](../interfaces/auth.md)
+- [glossary](../glossary.md) · [grpc-module-registry](../interfaces/grpc-module-registry.md) · [grpc-source-module](../interfaces/grpc-source-module.md) · [grpc-blob-storage](../interfaces/grpc-blob-storage.md) · [grpc-library](../interfaces/grpc-library.md) · [auth](../interfaces/auth.md)
 - Org: [05-deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md)
 
 **Read next:** [v0.1-milestones.md](v0.1-milestones.md) · Phase 2 (Auth vertical) is complete — Phase 3 (Source vertical) is current (Magpie + source protocol).

@@ -50,7 +50,7 @@ The library exists so playable intents are reusable: re-queue from history by Tu
 | **History** | User ↔ Tune references (durable / managed); survives Struna delete |
 | **Cache** | Optional storage key on the Tune; Magpie/Catbird fill it; Starling leaves it null |
 
-First play of a new Magpie URL or Starling URI **creates/updates a Tune** in the library, then queues that Tune. Later plays from history use the Tune id.
+First play of a new Magpie URL or Starling URI **creates/updates a Tune** in the library (`Library.EnsureTune`), then queues that Tune. Later plays from history use the Tune id.
 
 At play time, Neck loads the Tune, calls `StartTrack` on its module with the resolved track ref (and session audio endpoint). The module uses blob (if any) or live external id (URI) and writes canonical PCM.
 
@@ -62,10 +62,14 @@ One Struna can switch modules across queue entries — Magpie Tune, then Catbird
 - Deleting a Struna must not delete its Tunes; other Strunas and history may still need them.
 - Blob bytes live in [pluggable storage](storage.md); deleting a Tune deletes its blob only when a key exists and GC allows (exact policy later).
 
+## Module RPC
+
+Modules dial Kithara [EnsureTune](../interfaces/grpc-library.md) (**v0.1 draft**) after putting cache bytes. Upsert key: `module_slug` + `external_id`.
+
 ## Prototype artifacts
 
 Current [Tune.cs](../../Models/Tune.cs) has conflicting `PlaylistId` FK and `List<Playlist> Playlists`. Target model: **shared library Tune** (+ optional storage key) referenced by queue and history — see [ADR 006](../adrs/006-stream-source-tune-data-model.md).
 
-**Related:** [storage.md](storage.md) · [ADR 006](../adrs/006-stream-source-tune-data-model.md) · [ADR 010](../adrs/010-blob-storage-backends.md) · [playback-control.md](playback-control.md) · [source-modules.md](source-modules.md) · [glossary](../glossary.md)
+**Related:** [storage.md](storage.md) · [grpc-library](../interfaces/grpc-library.md) · [ADR 006](../adrs/006-stream-source-tune-data-model.md) · [ADR 010](../adrs/010-blob-storage-backends.md) · [playback-control.md](playback-control.md) · [source-modules.md](source-modules.md) · [glossary](../glossary.md)
 
 **Read next:** [storage.md](storage.md)
