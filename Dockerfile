@@ -20,14 +20,14 @@ WORKDIR /app
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/ \
-    && groupadd --gid 1000 kithara \
-    && useradd --uid 1000 --gid kithara --create-home kithara
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /data/mtls /data/db
 
 COPY --from=build /app/publish .
-RUN mkdir -p /data/mtls /data/db && chown -R kithara:kithara /data /app
+RUN chown -R "$APP_UID":"$APP_UID" /data /app
 
-USER kithara
+# aspnet:10.0 already ships a non-root user (APP_UID); GID 1000 is taken.
+USER $APP_UID
 ENV ASPNETCORE_URLS= \
     BARDIE_GRPC_TLS_DATA_PATH=/data/mtls \
     DbProvider=sqlite \

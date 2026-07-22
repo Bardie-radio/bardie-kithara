@@ -64,16 +64,16 @@ flowchart TB
 
 ## Current baseline (honest)
 
-**Phase 1 skeleton is complete** (`src/Kithara`, `libs/Bardie.*`, Module Registry + ModuleChannel mTLS, ADR-006 EF, OTel). **Phase 2 (Auth vertical) is current.** Spike Controllers / Playlist / Neck are gone from runtime — see [spike/prototype-neck-ffmpeg](../spike/prototype-neck-ffmpeg.md) for historical FFmpeg notes only.
+**Phase 1 skeleton is complete** (`src/Kithara`, `libs/Bardie.*`, Module Registry + ModuleChannel mTLS, ADR-006 EF, OTel). **Phase 2 (Auth vertical) is complete.** **Phase 3 (Source vertical) is current.** Spike Controllers / Playlist / Neck are gone from runtime — see [spike/prototype-neck-ffmpeg](../spike/prototype-neck-ffmpeg.md) for historical FFmpeg notes only.
 
 
-| Area    | Today (Phase 2)                                                      | Later phases                                |
+| Area    | Today (Phase 3)                                                      | Later phases                                |
 | ------- | -------------------------------------------------------------------- | ------------------------------------------- |
 | Layout  | Feature folders + packable orch / ModuleChannel / Contracts libs     | Fill Search/Streams/Listen behaviour        |
 | Models  | ADR 006 EF entities + migrations                                     | Control REST + queue/play                   |
-| Auth    | Contracts freeze; orch + Bes + JWT verify in progress                | Guest exchange REST (6); Plume login UI (7) |
+| Auth    | Orch + Bes + JWT Bearer `/api/auth/*` + `seedAdmin` bootstrap        | Guest exchange REST (6); Plume login UI (7) |
 | Audio   | Not yet                                                              | Session FIFO → FFmpeg → Stream Server (4–5) |
-| Modules | Registry join + mTLS; orch catalogs; `Bardie.Contracts` package SoT  | Magpie work RPCs (3); Plume REST (7)        |
+| Modules | Registry + mTLS; Bes live; Magpie work RPCs next                     | Plume REST (7)                              |
 ## Phase map
 
 Phases are **dependency-ordered**. Later phases may start stubs earlier, but do not ship behaviour that bypasses an unfrozen contract.
@@ -195,7 +195,7 @@ libs/
 
 ## Phase 2 — Auth vertical (Bes + Orchestrator)
 
-**Status: current.** Contracts package + Auth Orchestrator + Bes + JWT verify + bootstrap `seedAdmin`.
+**Status: complete.** Contracts package + Auth Orchestrator + Bes + JWT verify + bootstrap `seedAdmin`.
 
 **Why:** Control APIs need a verified identity. Auth stays behind Kithara (BFF).
 
@@ -238,6 +238,8 @@ libs/
 
 
 ## Phase 3 — Source vertical (protocol + Magpie proof)
+
+**Status: current.** Source protocol + Magpie proof (`Search` / `StartTrack` / FIFO write).
 
 **Why:** Prove multi-container audio control before investing in FFmpeg lifecycle.
 
@@ -480,4 +482,4 @@ Design-review open questions are **closed**. Phase 0 can proceed from the locked
 - [glossary](../glossary.md) · [grpc-module-registry](../interfaces/grpc-module-registry.md) · [auth](../interfaces/auth.md)
 - Org: [05-deployment](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/05-deployment.md)
 
-**Read next:** [v0.1-milestones.md](v0.1-milestones.md) · Phase 2 (Auth vertical) is current — finish Bes + orch + JWT `/api/auth/*`, then Phase 3 (Source vertical) can run in parallel.
+**Read next:** [v0.1-milestones.md](v0.1-milestones.md) · Phase 2 (Auth vertical) is complete — Phase 3 (Source vertical) is current (Magpie + source protocol).
