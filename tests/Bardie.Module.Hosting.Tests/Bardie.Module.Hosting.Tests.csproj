@@ -3,8 +3,12 @@
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <RootNamespace>Bardie.Orchestrator.Auth.Tests</RootNamespace>
+    <RootNamespace>Bardie.Module.Hosting.Tests</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
@@ -17,13 +21,11 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
-    <PackageReference Include="Microsoft.Extensions.Logging" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\libs\Bardie.Orchestrator.Auth\Bardie.Orchestrator.Auth.csproj" />
+    <ProjectReference Include="..\..\libs\Bardie.Module.Hosting\Bardie.Module.Hosting.csproj" />
+    <ProjectReference Include="..\..\libs\Bardie.Module.Channel\Bardie.Module.Channel.csproj" />
   </ItemGroup>
 
 </Project>

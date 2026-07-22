@@ -2,6 +2,7 @@ using Bardie.Orchestrator.Auth;
 using Bardie.Orchestrator.Auth.Catalog;
 using Bardie.Orchestrator.Auth.Ports;
 using Bardie.Module.Channel;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Xunit;
@@ -15,6 +16,7 @@ public class AuthOrchestratorScaffoldTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
         services.AddSingleton<IAuthPersistence, FakeAuthPersistence>();
         services.AddAuthModuleOrchestrator(options =>
         {
