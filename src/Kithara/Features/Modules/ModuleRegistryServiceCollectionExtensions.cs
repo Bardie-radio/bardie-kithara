@@ -1,5 +1,7 @@
 using Bardie.ModuleChannel.Hosting;
+using Kithara.Features.Library;
 using Kithara.Features.Modules;
+using Kithara.Infrastructure.Storage;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
@@ -35,6 +37,8 @@ public static class ModuleRegistryServiceCollectionExtensions
     public static WebApplication MapModuleRegistry(this WebApplication app)
     {
         app.MapGrpcService<ModuleRegistryService>();
+        app.MapGrpcService<BlobStorageService>();
+        app.MapGrpcService<LibraryService>();
         return app;
     }
 }

@@ -22,10 +22,11 @@ Env and Compose knobs for the **Kithara container** — database, collectors, mo
 | `BARDIE_STORAGE_DRIVER` | Blob backend: `local` (MVP default) \| `s3` \| later `webdav` |
 | `BARDIE_STORAGE_PATH` | Local driver root (volume or NFS/SMB mount) |
 | `BARDIE_STORAGE_S3_*` | S3-compatible endpoint, bucket, region, credentials (sketch) |
+| `BARDIE_STRUNA_FIFO_PATH` | Shared volume root for **live Struna PCM FIFOs** (`{root}/strunas/{id}.pcm`). Not library downloads — those use `BARDIE_STORAGE_PATH` |
 
 **User/login** JWT mint / refresh TTLs belong on the **auth module** (e.g. Bes) — Kithara only verifies those via module JWKS. Optional Kithara knobs later: JWKS cache / clock-skew tolerances.
 
-Library blobs (Magpie cache, Catbird uploads) use the storage driver above on **Kithara only** — modules do not duplicate `BARDIE_STORAGE_*`; they use Kithara as storage interface/discovery. See [storage](../domains/storage.md). Not Redis.
+Library blobs (Magpie cache, Catbird uploads) use the storage driver above on **Kithara only** — modules do not duplicate `BARDIE_STORAGE_*`; they use Kithara as storage interface/discovery. See [storage](../domains/storage.md). Not Redis. Neck FIFOs use `BARDIE_STRUNA_FIFO_PATH` on Kithara **and** the same mount on source modules that write PCM.
 
 ## Module discovery
 

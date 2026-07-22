@@ -10,6 +10,20 @@ public sealed class ModuleChannelOptions
     /// <summary>When true (default), server and outbound helpers expect mTLS.</summary>
     public bool UseMtls { get; set; } = true;
 
+    /// <summary>
+    /// Full gRPC method paths (<c>/package.Service/Method</c>) that may proceed without a client certificate.
+    /// Prefer <see cref="AllowMethodWithoutClientCertificate"/> to <b>add</b> entries.
+    /// Binding this list from JSON/<c>Configure</c> <b>replaces</b> the whole collection — use
+    /// <see cref="IncludeRegisterWithoutClientCertificate"/> (default true) so mesh <c>Register</c> is not dropped accidentally.
+    /// </summary>
+    public List<string> AllowWithoutClientCertificate { get; set; } = [];
+
+    /// <summary>
+    /// When true (default), <see cref="ModuleRegistryMethodPaths.Register"/> is always kept on the allowlist
+    /// after options bind. Set false only if the host intentionally requires a client certificate on Register.
+    /// </summary>
+    public bool IncludeRegisterWithoutClientCertificate { get; set; } = true;
+
     /// <summary>Env: <c>BARDIE_MODULE_MTLS_BOOTSTRAP</c> — <c>auto</c> | <c>preshared</c>.</summary>
     public ModuleChannelBootstrapMode BootstrapMode { get; set; } = ModuleChannelBootstrapMode.Auto;
 
@@ -24,4 +38,30 @@ public sealed class ModuleChannelOptions
 
     /// <summary>DNS names embedded in the host server certificate SAN.</summary>
     public string[] ServerDnsNames { get; set; } = ["kithara", "localhost"];
+
+    /// <summary>Adds a method to <see cref="AllowWithoutClientCertificate"/> (idempotent).</summary>
+    public ModuleChannelOptions AllowMethodWithoutClientCertificate(string package, string service, string method)
+    {
+        return AllowMethodWithoutClientCertificate(GrpcMethodPath.Format(package, service, method));
+    }
+
+    /// <summary>Adds a full method path to <see cref="AllowWithoutClientCertificate"/> (idempotent).</summary>
+    public ModuleChannelOptions AllowMethodWithoutClientCertificate(string fullMethodPath)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(fullMethodPath);
+        AllowWithoutClientCertificate ??= [];
+        if (!AllowWithoutClientCertificate.Contains(fullMethodPath, StringComparer.Ordinal))
+        {
+            AllowWithoutClientCertificate.Add(fullMethodPath);
+        }
+
+        return this;
+    }
+
+    /// <summary>Replaces <see cref="AllowWithoutClientCertificate"/> with the given full method paths.</summary>
+    public ModuleChannelOptions SetAllowWithoutClientCertificate(params string[] fullMethodPaths)
+    {
+        AllowWithoutClientCertificate = [.. fullMethodPaths];
+        return this;
+    }
 }

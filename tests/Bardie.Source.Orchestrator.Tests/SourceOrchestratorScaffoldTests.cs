@@ -29,11 +29,15 @@ public class SourceOrchestratorScaffoldTests
 
     private sealed class FakeBlobStorage : IBlobStorage
     {
-        public Task PutAsync(string key, Stream content, string? contentType = null, CancellationToken cancellationToken = default) =>
-            Task.CompletedTask;
+        public Task<long> PutAsync(
+            string key,
+            Stream content,
+            string? contentType = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0L);
 
-        public Task<Stream?> OpenReadAsync(string key, CancellationToken cancellationToken = default) =>
-            Task.FromResult<Stream?>(null);
+        public Task<BlobReadResult?> OpenReadAsync(string key, CancellationToken cancellationToken = default) =>
+            Task.FromResult<BlobReadResult?>(null);
 
         public Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default) =>
             Task.FromResult(false);

@@ -41,6 +41,43 @@ services.AddModuleChannel(options =>
 
 `AddAuthModuleOrchestrator()` / `AddSourceModuleOrchestrator()` call this with mTLS on by default.
 
+### mTLS exemptions (bootstrap RPCs)
+
+The bootstrap interceptor runs on **every** gRPC call shape. By default **Module Registry `Register`** may omit a client certificate — that RPC *is* the mesh join handshake.
+
+**Options bind caveat:** assigning `AllowWithoutClientCertificate` from JSON or `Configure` **replaces** the whole list. Additive changes should use `AllowMethodWithoutClientCertificate(...)`. `IncludeRegisterWithoutClientCertificate` (default `true`) re-adds `ModuleRegistryMethodPaths.Register` in a `PostConfigure` so a partial JSON list cannot accidentally drop mesh join.
+
+```csharp
+services.AddModuleChannel(options =>
+{
+    // Additive (keeps Register):
+    options.AllowMethodWithoutClientCertificate("myhost.v1", "Bootstrap", "Join");
+
+    // Or replace, still keeping Register via PostConfigure unless opted out:
+    options.SetAllowWithoutClientCertificate(
+        GrpcMethodPath.Format("myhost.v1", "Bootstrap", "Join"));
+
+    // Rare: require client cert even on Register
+    // options.IncludeRegisterWithoutClientCertificate = false;
+});
+```
+
+Paths for Module Registry RPCs come from the generated protobuf descriptor (`ModuleRegistryMethodPaths`), not hand-copied package strings. Proto `package bardie.modules.v1` is the **wire API version** — bumping to `v2` is a breaking contract change (clients must regenerate); it is not dead naming.
+
+Well-known paths: `ModuleRegistryMethodPaths.Register`, `ModuleRegistryMethodPaths.Heartbeat` (Heartbeat still requires mTLS).
+
+appsettings (optional — include Register yourself if you set this key, or rely on `IncludeRegisterWithoutClientCertificate`):
+
+```json
+{
+  "ModuleChannel": {
+    "AllowWithoutClientCertificate": [
+      "/bardie.modules.v1.ModuleRegistry/Register"
+    ]
+  }
+}
+```
+
 ## Participant DI (modules)
 
 ```csharp

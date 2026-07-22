@@ -32,6 +32,17 @@ public static class ModuleChannelServiceCollectionExtensions
             services.Configure(configure);
         }
 
+        // Options Bind/Configure replaces List properties wholesale — re-apply mesh Register unless opted out.
+        services.PostConfigure<ModuleChannelOptions>(options =>
+        {
+            if (!options.IncludeRegisterWithoutClientCertificate)
+            {
+                return;
+            }
+
+            options.AllowMethodWithoutClientCertificate(ModuleRegistryMethodPaths.Register);
+        });
+
         services.AddSingleton<FileModuleCertificateStore>();
         services.AddSingleton<IModuleCertificateStore>(sp => sp.GetRequiredService<FileModuleCertificateStore>());
         services.AddSingleton<IModuleCertificateIssuer, ModuleCertificateIssuer>();
