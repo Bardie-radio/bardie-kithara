@@ -1,8 +1,8 @@
 # ModuleChannel (mTLS + participant library)
 
-Kithara (and future external hosts) embed **`Bardie.ModuleChannel`** for module gRPC channel security. Modules (Bes, Magpie, …) embed the same package for **manifest identity**, Register/Heartbeat, and work-port TLS. Mesh join RPCs stay host-owned; **crypto, bootstrap policy, and static module identity live in the library** so embedders do not reinvent Kestrel/GrpcChannel wiring.
+Kithara (and future external hosts) embed **`Bardie.Module.Channel`** for module gRPC channel security. Modules (Bes, Magpie, …) embed the same package for **manifest identity**, Register/Heartbeat, and work-port TLS. Mesh join RPCs stay host-owned; **crypto, bootstrap policy, and static module identity live in the library** so embedders do not reinvent Kestrel/GrpcChannel wiring.
 
-**Library home:** [`libs/Bardie.ModuleChannel`](../../../libs/Bardie.ModuleChannel/README.md) · contracts: [`Bardie.Contracts`](../../../libs/Bardie.Contracts/README.md)
+**Library home:** [`libs/Bardie.Module.Channel`](../../../libs/Bardie.Module.Channel/README.md) · contracts: [`Bardie.Contracts`](../../../libs/Bardie.Contracts/README.md)
 
 ## Why it exists
 
@@ -13,7 +13,7 @@ Modules dial the host to `Register`, then speak mTLS for Heartbeat and work RPCs
 | Context | How modules reference libs |
 |---------|----------------------------|
 | Multi-root workspace / Local Compose sibling layout | If `../kithara/libs` exists → **`ProjectReference`** (Bes `Directory.Build.props`) |
-| Standalone CI / published consumers | **`PackageReference`** to versioned `Bardie.Contracts` + `Bardie.ModuleChannel` (`0.1.0`) |
+| Standalone CI / published consumers | **`PackageReference`** to versioned `Bardie.Contracts` + `Bardie.Module.Channel` (`0.1.0`) |
 
 Do **not** git-submodule Kithara, copy `.proto`/`.cs` into module repos, or path-include protos from another repo in a module csproj.
 
@@ -45,7 +45,7 @@ Loader: `ModuleManifestLoader` + `BuildRegisterRequest(joinSecret, advertiseAddr
 
 ## Bardie capabilities vocabulary (host convention)
 
-Capabilities are **open strings** on the wire. ModuleChannel never interprets them. The tables below are **Bardie host** conventions (Kithara’s Auth Orchestrator gates RPCs on these values via `Bardie.Auth.Orchestrator.WellKnownAuthCapabilities` / host `WellKnownSourceCapabilities`) — documented here so module authors see the vocabulary next to Register.
+Capabilities are **open strings** on the wire. ModuleChannel never interprets them. The tables below are **Bardie host** conventions (Kithara’s Auth Orchestrator gates RPCs on these values via `Bardie.Orchestrator.Auth.WellKnownAuthCapabilities` / host `WellKnownSourceCapabilities`) — documented here so module authors see the vocabulary next to Register.
 
 | Put in `capabilities[]` | Keep elsewhere |
 |-------------------------|----------------|

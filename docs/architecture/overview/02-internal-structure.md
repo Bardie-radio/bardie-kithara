@@ -72,9 +72,9 @@ src/Kithara/
     Storage/      # blob drivers (local MVP) — backing store for source orch storage API
 libs/
   Bardie.Contracts/           # packable protos (ModuleRegistry, AuthAdapter)
-  Bardie.ModuleChannel/
-  Bardie.Auth.Orchestrator/
-  Bardie.Source.Orchestrator/
+  Bardie.Module.Channel/
+  Bardie.Orchestrator.Auth/
+  Bardie.Orchestrator.Source/
 ```
 
 FFmpeg child processes **outlive HTTP requests** — own them with a hosted background supervisor, not a request-scoped service alone.

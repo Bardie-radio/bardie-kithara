@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using System.Text.Json.Serialization;
-using Bardie.Auth.Orchestrator;
-using Bardie.Auth.Orchestrator.Ports;
+using Bardie.Orchestrator.Auth;
+using Bardie.Orchestrator.Auth.Ports;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Kithara.Features.Auth;

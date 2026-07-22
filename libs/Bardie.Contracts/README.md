@@ -23,4 +23,4 @@ C# stubs are generated with `GrpcServices=Both` (client + server). `.proto` file
 | Multi-root / sibling `kithara/libs` | `ProjectReference` to this project (Bes uses `Directory.Build.props` when `../kithara/libs` exists) |
 | Standalone CI / published consumers | `PackageReference` to `Bardie.Contracts` `0.1.0` |
 
-Pack with ModuleChannel: `dotnet pack libs/Bardie.Contracts/Bardie.Contracts.csproj libs/Bardie.ModuleChannel/Bardie.ModuleChannel.csproj -c Release`.
+Pack with ModuleChannel: `dotnet pack libs/Bardie.Contracts/Bardie.Contracts.csproj libs/Bardie.Module.Channel/Bardie.Module.Channel.csproj -c Release`.

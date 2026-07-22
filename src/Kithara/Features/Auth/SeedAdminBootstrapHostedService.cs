@@ -1,5 +1,5 @@
-using Bardie.Auth.Orchestrator;
-using Bardie.Auth.Orchestrator.Models;
+using Bardie.Orchestrator.Auth;
+using Bardie.Orchestrator.Auth.Models;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 

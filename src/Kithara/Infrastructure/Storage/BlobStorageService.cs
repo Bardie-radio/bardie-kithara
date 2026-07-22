@@ -1,5 +1,5 @@
-using Bardie.ModuleChannel.Hosting;
-using Bardie.Source.Orchestrator.Ports;
+using Bardie.Module.Channel.Hosting;
+using Bardie.Orchestrator.Source.Ports;
 using Bardie.Storage.V1;
 using Grpc.Core;
 using Google.Protobuf;

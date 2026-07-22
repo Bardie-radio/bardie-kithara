@@ -1,5 +1,5 @@
 using Bardie.Library.V1;
-using Bardie.ModuleChannel.Hosting;
+using Bardie.Module.Channel.Hosting;
 using Grpc.Core;
 
 namespace Kithara.Features.Library;

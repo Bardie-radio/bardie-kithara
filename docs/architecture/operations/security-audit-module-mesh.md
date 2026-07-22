@@ -1,6 +1,6 @@
 # Security audit — Module mesh mTLS (Phase 1)
 
-Living audit of Module Registry + `Bardie.ModuleChannel` trust assumptions. Not a full product pen-test — focused on **who can become a trusted module**.
+Living audit of Module Registry + `Bardie.Module.Channel` trust assumptions. Not a full product pen-test — focused on **who can become a trusted module**.
 
 **Status:** Phase 1 skeleton (in-memory registry, auto + preshared bootstrap). Revisit when registry state or cert pinning lands.
 
