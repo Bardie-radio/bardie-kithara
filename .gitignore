@@ -66,6 +66,8 @@ nunit-*.xml
 *.env
 .idea/
 DS_Store
-# Ignore backup and swap files
-*.swp
-*.swo
+# Local runtime data (TLS material, SQLite)
+*.db
+*.db-shm
+*.db-wal
+data/

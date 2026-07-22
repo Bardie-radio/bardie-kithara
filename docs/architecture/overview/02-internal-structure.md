@@ -45,29 +45,36 @@ How **Kithara** is structured inside one process. Ecosystem layout (Plume, modul
 |-----------|----------------|
 | **REST API** | Client-facing control: Struna lifecycle, play/skip/queue, auth discovery/authenticate |
 | **Stream Server** | `GET /stream/{slug}` — ICY-over-HTTP listener fan-out |
-| **Auth Orchestrator** | Discovery, identity routing, login JWT verify (JWKS), guest-code exchange + ephemeral guest users, `seedAdmin`, refresh proxy to modules, join secrets, listen checks |
+| **Auth Orchestrator** | Discovery, identity routing, login JWT verify (JWKS), guest-code exchange + ephemeral guest users, `seedAdmin`, refresh proxy to modules, join secrets, listen checks. **Shape as a library with host ports** (user/binding persistence); Bardie-only extras (guests, join secrets, REST BFF) wrap the library — [org 07](https://github.com/Bardie-radio/.github/blob/main/profile/docs/architecture/07-modules-beyond-bardie.md) |
 | **Module Registry** | Source + auth + client module register / heartbeat (modules dial Kithara; join secret) |
-| **Neck Service** | Alive Struna lifecycle, session FIFOs, silence feeder, `StartTrack`/`StopTrack`, wire encoders to Stream Server |
+| **Neck Service** | Alive Struna lifecycle, session FIFOs, silence feeder, `StartTrack`/`StopTrack`, wire encoders to Stream Server. **Source search / download routing** should live in a **source module orchestrator** library Neck/API call into — not buried only in REST handlers |
 | **Silence feeder** | Keeps FFmpeg fed when no module writer is attached |
 | **Struna Encoder** | Per-alive-Struna FFmpeg; reads session FIFO for Struna life |
 | **Persistence** | Users + bindings, Struna metadata, library/Tune refs (SQLite or Postgres) |
 
-## Target solution layout (foreshadow)
+## Solution layout
 
-Prefer **feature-first** folders and Minimal APIs ([aspnet team rules](../../../.cursor/rules/aspnet.mdc) in repo):
+Root buckets: `src/` (host + DummyRegistrar), `libs/` (packable Contracts + ModuleChannel + orchestrators), `tests/`, `docs/`. Prefer **feature-first** folders and Minimal APIs ([aspnet team rules](../../../.cursor/rules/aspnet.mdc) in repo):
 
 ```text
-Features/
-  Streams/      # REST + handlers
-  Auth/         # discovery, JWT verify, guest ephemeral users, seedAdmin orchestration
-  Modules/      # registry gRPC (modules dial in)
-  Streaming/    # Stream Server, ICY
-  Library/      # Tune metadata + storage keys
-  Search/       # global search + principal-scoped result cache
-Infrastructure/
-  Persistence/  # EF, IDbContextFactory
-  Neck/         # hosted FFmpeg supervisor + session FIFO + silence
-  Storage/      # blob drivers (local MVP)
+src/Kithara/
+  Features/
+    Streams/      # REST + handlers
+    Auth/         # Bardie host wrappers around auth orch (guests, REST BFF)
+    Modules/      # registry gRPC (modules dial in)
+    Streaming/    # Stream Server, ICY
+    Library/      # Tune metadata + storage keys
+    Search/       # source orch wrappers + principal-scoped result cache
+  Infrastructure/
+    Persistence/  # EF, IDbContextFactory — implements orch host ports
+    Observability/# OTel registration (service.name=bardie.kithara)
+    Neck/         # hosted FFmpeg supervisor + session FIFO + silence
+    Storage/      # blob drivers (local MVP) — backing store for source orch storage API
+libs/
+  Bardie.Contracts/           # packable protos (ModuleRegistry, AuthAdapter)
+  Bardie.ModuleChannel/
+  Bardie.Auth.Orchestrator/
+  Bardie.Source.Orchestrator/
 ```
 
 FFmpeg child processes **outlive HTTP requests** — own them with a hosted background supervisor, not a request-scoped service alone.

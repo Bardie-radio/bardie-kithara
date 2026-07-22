@@ -37,11 +37,11 @@ flowchart TB
 
 **User-facing surfaces** are Kithara (REST / callbacks) and UI client modules (Plume, Beak, Cauda, …). Auth adapters stay on the **internal** network.
 
-Clients render login UI from discovery:
+Clients render login UI from discovery by switching on `ProviderDescriptor.ui` (typed oneof) — **not** on provider/module name:
 
-- `form_schema` — client renders fields (MVP Bes)
-- `redirect` — browser goes to an external authorize URL from discovery; returns to a **Kithara** callback
-- `embed` — prefer avoid; not required for MVP
+- `form_schema` — client renders `FormField` list (MVP Bes)
+- `redirect` — browser goes to `authorize_url`; returns to a **Kithara** callback
+- future ceremony case for passkeys — still mode-based, not `if hecate`
 
 Adapters do **not** expose a public HTTP login surface.
 

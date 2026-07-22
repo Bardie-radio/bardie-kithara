@@ -1,6 +1,8 @@
-# gRPC Auth Adapter Contract (sketch)
+# gRPC Auth Adapter Contract (v0.1 draft)
 
 Auth adapters (**Bes**, **Argus**, **Hecate**, …) speak **one** work contract. Join is via [Module Registry](grpc-module-registry.md) (module dials Kithara) — `Register` is **not** on this service.
+
+**Status:** v0.1 draft — RPC set and dial rules are frozen; field names may still evolve slightly before NuGet publish. Checked-in proto: [`libs/Bardie.Contracts/Protos/auth_adapter.proto`](../../../libs/Bardie.Contracts/Protos/auth_adapter.proto) (package `Bardie.Contracts`).
 
 **Unified token protocol for login: JWT.** Modules authenticate/verify and **return access + refresh JWTs** (mint their own, or forward a provider’s — Argus forwards OIDC tokens). Kithara stores users/bindings and verifies those JWTs via module JWKS.
 
@@ -9,6 +11,12 @@ Kithara does **not** mint auth-module login JWTs. It **does** mint JWTs for **ep
 There is **no** protocol-specific RPC. Redirect callbacks, form posts, and ceremony payloads all arrive as an opaque bag on `Authenticate`.
 
 ```protobuf
+syntax = "proto3";
+
+package bardie.auth.v1;
+
+option csharp_namespace = "Bardie.Auth.V1";
+
 service AuthAdapter {
   rpc Health(HealthRequest) returns (HealthResponse);
   rpc GetProviders(GetProvidersRequest) returns (GetProvidersResponse);
@@ -23,12 +31,17 @@ Per-request `ValidateToken` against the module is **not** the hot path — Kitha
 
 ## Capabilities (Registry)
 
-| Capability | Meaning |
-|------------|---------|
-| `seedAdmin` | Module can create an initial admin (local proof) when Kithara asks |
-| (others TBD) | e.g. self-register, password reset — advertise when implemented |
+Capabilities are **optional feature flags within kind `auth`**. They gate host RPCs; they are not the module type and not core verbs every auth adapter must speak (`Health` / `GetProviders` / `Authenticate` / `Refresh`). Full mesh vocabulary (source + auth, what belongs in `capabilities[]` vs elsewhere) lives in [module-channel.md](../operations/module-channel.md).
 
-**Bes** advertises `seedAdmin`. **Argus** typically does **not** — IdP users are discovered/linked, not locally invented.
+| Capability | Status | Meaning |
+|------------|--------|---------|
+| `seedAdmin` | **MVP** | Host may call `SeedAdmin` when the user DB is empty |
+| `selfRegister` | Reserved | Open signup via `Authenticate` (e.g. Bes “register” form) without operator seed — advertise only when implemented |
+| `passwordReset` | Reserved | Host/UI can expose reset; module owns ceremony in the opaque `Authenticate` bag — advertise only when implemented |
+
+**Not a module capability:** account linking stays **Kithara’s story** (explicit multi-provider link in the user DB / orchestrator). Auth adapters only prove identity for their provider — they do not advertise `accountLink`.
+
+**Bes** advertises `seedAdmin` only for MVP (`module.manifest.json`). **Argus** typically does **not** — IdP users are discovered/linked, not locally invented.
 
 ### `SeedAdmin`
 
@@ -36,13 +49,18 @@ Called by Kithara when the user DB is empty (or operator forces re-seed). Module
 
 ```protobuf
 message SeedAdminRequest {
-  // correlation / operator hint — sketch
+  string correlation_id = 1;  // optional operator hint — not secrets
 }
 
 message SeedAdminResponse {
   bool created = 1;
   string welcome_log_text = 2;  // includes one-time credentials; Kithara logs only
-  // binding / ensure_user fields as on Authenticate — sketch
+  string external_subject = 3;
+  bytes binding_payload = 4;
+  bool ensure_user = 5;
+  bool must_rotate_credentials = 6;
+  repeated string roles = 7;
+  map<string, string> entities = 8;
 }
 ```
 
@@ -50,19 +68,48 @@ Seeded admins **must** change credentials on first successful login (`must_rotat
 
 **Security:** `SeedAdmin` is a privileged RPC. Only Kithara may invoke it — after Module Registry handshake, **mTLS** (client cert issued at Register) identifies Kithara→module calls. Modules must reject callers without a valid Kithara-issued cert. Same class of protection applies to other risky RPCs.
 
+## Discovery UI (no module-name branching)
+
+Clients render login from discovery by switching on `ProviderDescriptor.ui` **only**. `id` is an opaque handle echoed back as `provider_id` on `Authenticate` / `Refresh` — never `if (id == "bes")`.
+
+| `ui` case | Client behaviour |
+|-----------|------------------|
+| `form_schema` | Render `fields`; POST payload keys = `FormField.name` |
+| `redirect` | Navigate to `authorize_url`; return to **Kithara** callback |
+
+Kithara merges descriptors and forwards them on `GET /api/auth/discovery`. It does not interpret field lists or authorize URLs beyond routing.
+
 ## Key messages
 
 ```protobuf
 message ProviderDescriptor {
-  string id = 1;           // provider slug (bes, argus, hecate, …)
+  string id = 1;            // routing only — UI must not branch on this
   string display_name = 2;
-  string ui_mode = 3;      // form_schema, redirect, …
-  // Opaque client hints: form fields, authorize URL, etc.
+  oneof ui {
+    FormSchemaUi form_schema = 10;
+    RedirectUi redirect = 11;
+  }
+}
+
+message FormSchemaUi {
+  repeated FormField fields = 1;
+}
+
+message FormField {
+  string name = 1;       // key in Authenticate.payload
+  string label = 2;
+  string input_type = 3; // text | password | email | …
+  bool required = 4;
+}
+
+message RedirectUi {
+  string authorize_url = 1;
 }
 
 message AuthenticateRequest {
   string provider_id = 1;
   map<string, string> payload = 2;  // credentials, callback params, ceremony data, …
+  bytes existing_binding_payload = 3;  // Kithara-loaded binding (empty = none)
 }
 
 message AuthenticateResponse {
@@ -89,24 +136,26 @@ message RefreshResponse {
   string access_token = 2;
   string refresh_token = 3;
   int64 expires_in = 4;
+  string token_type = 5;
 }
 ```
 
-Exact field shapes are sketch-level; invariants:
+Invariants (frozen for v0.1):
 
 1. **JWT in, JWT out** for auth-module login credentials.
 2. **Module owns issue + refresh** for those JWTs; Kithara verifies and authorizes.
-3. **Kithara owns** user DB rows when the module asks to store them.
-4. **Capabilities** decide whether Kithara may call `SeedAdmin` (etc.).
+3. **Kithara owns** user DB rows when the module asks to store them (`ensure_user` + `binding_payload`).
+4. **Kithara passes** `existing_binding_payload` so DB-less adapters (Bes) can verify password proofs without a local store.
+5. **Capabilities** decide whether Kithara may call `SeedAdmin` (and later reserved caps).
 
 ## How modules use the same RPCs
 
-| Module | `GetProviders` | `Authenticate` / tokens | `seedAdmin` |
-|--------|----------------|-------------------------|-------------|
-| **Bes** | `form_schema` | Verifies password; **mints** JWT (+ refresh) | Yes |
-| **Argus** | `redirect` + authorize URL | Completes OIDC; **forwards** IdP JWTs | No (typical) |
-| **Hecate** | ceremony hints | Completes WebAuthn; **mints** JWT (+ refresh) | TBD |
+| Module | `GetProviders` `ui` | `Authenticate` / tokens | `seedAdmin` |
+|--------|---------------------|-------------------------|-------------|
+| **Bes** | `form_schema` (username/password fields) | Verifies password; **mints** JWT (+ refresh) | Yes |
+| **Argus** | `redirect` (`authorize_url`) | Completes OIDC; **forwards** IdP JWTs | No (typical) |
+| **Hecate** | future ceremony `ui` case | Completes WebAuthn; **mints** JWT (+ refresh) | TBD |
 
-**Related:** [grpc-module-registry](grpc-module-registry.md) · [domains/auth-adapters.md](../domains/auth-adapters.md) · [interfaces/auth.md](auth.md) · [ADR 007](../adrs/007-auth-adapter-modules.md)
+**Related:** [grpc-module-registry](grpc-module-registry.md) · [domains/auth-adapters.md](../domains/auth-adapters.md) · [interfaces/auth.md](auth.md) · [ADR 007](../adrs/007-auth-adapter-modules.md) · [Bardie.Contracts](../../../libs/Bardie.Contracts/README.md)
 
 **Read next:** [uri-routing.md](uri-routing.md)

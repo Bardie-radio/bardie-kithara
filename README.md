@@ -4,7 +4,7 @@
 
 Kithara is the main instrument of the Bardie ecosystem. It exposes a REST API for clients, coordinates source and auth modules over gRPC, encodes live audio with FFmpeg, and serves synchronized streams to listeners over HTTP.
 
-🚧 **Heavily Work in Progress.** No working builds yet
+🚧 **Heavily Work in Progress.** Solution builds on `net10.0` (`Kithara.sln`); runtime needs `Microsoft.AspNetCore.App` 10.
 
 ---
 

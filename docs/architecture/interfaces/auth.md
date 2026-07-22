@@ -38,9 +38,9 @@ sequenceDiagram
 
 `GET /api/auth/discovery` — Auth Orchestrator merges `GetProviders()` from registered adapters. There is no built-in provider.
 
-MVP: one `form_schema` provider from **Bes**. Client (e.g. Plume) renders fields from discovery — adapters do **not** host login HTML.
+MVP: one `form_schema` provider from **Bes** (`ProviderDescriptor.ui.form_schema` with typed fields). Client (e.g. Plume) renders from the field list — adapters do **not** host login HTML. Clients switch on the `ui` oneof case only; they must not branch on provider `id`.
 
-Redirect-style providers (Argus) advertise an authorize URL. The browser returns to **Kithara**, not to Plume or the adapter. Kithara forwards the opaque callback payload to that adapter’s `Authenticate`. Path: `/api/auth/callback` under `/api/*` (no separate public `/auth` prefix for MVP).
+Redirect-style providers (Argus) set `ui.redirect.authorize_url`. The browser returns to **Kithara**, not to Plume or the adapter. Kithara forwards the opaque callback payload to that adapter’s `Authenticate`. Path: `/api/auth/callback` under `/api/*` (no separate public `/auth` prefix for MVP).
 
 ## Authenticate, refresh, and API access
 

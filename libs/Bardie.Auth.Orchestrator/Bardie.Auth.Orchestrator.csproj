@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bardie.Auth.Orchestrator</RootNamespace>
+    <AssemblyName>Bardie.Auth.Orchestrator</AssemblyName>
+    <IsPackable>true</IsPackable>
+    <PackageId>Bardie.Auth.Orchestrator</PackageId>
+    <Description>Auth module orchestrator library for Bardie hosts.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bardie.Contracts\Bardie.Contracts.csproj" />
+    <ProjectReference Include="..\Bardie.ModuleChannel\Bardie.ModuleChannel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+  </ItemGroup>
+
+</Project>

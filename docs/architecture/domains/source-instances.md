@@ -56,7 +56,7 @@ See [interfaces/grpc-source-module.md](../interfaces/grpc-source-module.md): `St
 
 ## Replaces prototype approach
 
-Prototype [Neck.cs](../../Services/Neck.cs) concatenated playlist files in FFmpeg. Target: modules write PCM into a Neck-owned FIFO while FFmpeg stays up for the Struna life.
+Prototype Neck concatenated playlist files in FFmpeg ([spike notes](../spike/prototype-neck-ffmpeg.md)). Target: modules write PCM into a Neck-owned FIFO while FFmpeg stays up for the Struna life.
 
 **Related:** [ADR 004](../adrs/004-source-instance-socket-audio-plane.md) · [domains/streams.md](streams.md) · [interfaces/streaming-stack.md](../interfaces/streaming-stack.md)
 
