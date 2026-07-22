@@ -5,7 +5,9 @@
     <AssemblyName>Bardie.Orchestrator.Source</AssemblyName>
     <IsPackable>true</IsPackable>
     <PackageId>Bardie.Orchestrator.Source</PackageId>
+    <Version>0.1.0</Version>
     <Description>Source module orchestrator library for Bardie hosts.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +18,10 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

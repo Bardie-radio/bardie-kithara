@@ -64,12 +64,12 @@ flowchart TB
 
 ## Current baseline (honest)
 
-**Phase 1 skeleton is complete** (`src/Kithara`, `libs/Bardie.*`, Module Registry + ModuleChannel mTLS, ADR-006 EF, OTel). **Phase 2 (Auth vertical) is complete.** **Phase 3 (Source vertical) is current.** Spike Controllers / Playlist / Neck are gone from runtime — see [spike/prototype-neck-ffmpeg](../spike/prototype-neck-ffmpeg.md) for historical FFmpeg notes only.
+**Phase 1 skeleton is complete** (`src/Kithara`, `libs/Bardie.*`, Module Registry + `Bardie.Module.Channel` mTLS, ADR-006 EF, OTel). **Phase 2 (Auth vertical) is complete.** **Phase 3 (Source vertical) is current.** Spike Controllers / Playlist / Neck are gone from runtime — see [spike/prototype-neck-ffmpeg](../spike/prototype-neck-ffmpeg.md) for historical FFmpeg notes only.
 
 
 | Area    | Today (Phase 3)                                                      | Later phases                                |
 | ------- | -------------------------------------------------------------------- | ------------------------------------------- |
-| Layout  | Feature folders + packable orch / ModuleChannel / Contracts libs     | Fill remaining Streams/Listen behaviour     |
+| Layout  | Feature folders + packable Module.* / Orchestrator.* / Contracts libs | Fill remaining Streams/Listen behaviour     |
 | Models  | ADR 006 EF entities + migrations                                     | Full queue CRUD + guest ACL surface (6)     |
 | Auth    | Orch + Bes + JWT Bearer `/api/auth/*` + `seedAdmin` bootstrap        | Guest exchange REST (6); Plume login UI (7) |
 | Audio   | Session FIFO + Magpie PCM proof (in progress)                        | FFmpeg supervisor → Stream Server (4–5)     |
@@ -150,13 +150,13 @@ Same contract on Bes/Magpie/Plume from their first runnable container ([ADR 008]
 
 ## Phase 1 — Kithara skeleton
 
-**Status: complete.** Dual listeners, Module Registry, ModuleChannel mTLS (`auto` \| `preshared`), orch lib scaffolds, ADR-006 EF, OTel `bardie.kithara`.
+**Status: complete.** Dual listeners, Module Registry, `Bardie.Module.Channel` mTLS (`auto` \| `preshared`), orch lib scaffolds, ADR-006 EF, OTel `bardie.kithara`.
 
 **Why:** Everything else hangs off registry, persistence, HTTP/gRPC hosts, and telemetry plumbing.
 
 ### Work
 
-1. **Feature-first layout** under `src/Kithara` + packable `libs/` (Auth/Source orch, ModuleChannel) — see [02-internal-structure](../overview/02-internal-structure.md) and [module-channel](../operations/module-channel.md):
+1. **Feature-first layout** under `src/Kithara` + packable `libs/` (Orchestrator.Auth/Source, Module.Channel/Hosting/Auth) — see [02-internal-structure](../overview/02-internal-structure.md) and [module-channel](../operations/module-channel.md):
 
 ```text
 src/Kithara/
@@ -168,6 +168,8 @@ src/Kithara/
 libs/
   Bardie.Contracts/
   Bardie.Module.Channel/
+  Bardie.Module.Hosting/
+  Bardie.Module.Auth/
   Bardie.Orchestrator.Auth/
   Bardie.Orchestrator.Source/
 ```
@@ -176,7 +178,7 @@ libs/
 3. **OpenTelemetry bootstrap** in `Program.cs`: OTLP exporter, `service.name=bardie.kithara`, ASP.NET + gRPC + HttpClient + EF auto-instrumentation; W3C propagation on. Safe when collector is absent.
 4. EF migrations for core tables (ADR 006 shapes).
 5. **Module Registry** service: `Register` authenticated by **join secret**; issues client certs in `auto` mode (or confirms preshared material); **Heartbeat authenticated by mTLS** (not join secret). Track slug, capabilities, advertise address, JWKS (auth), search schema (sources); project AUTH/SOURCE into orch catalogs. Registry RPCs appear as spans once gRPC instrumentation is on.
-6. Dual listeners: HTTP `:8080`, gRPC HTTPS `:5000` (internal) via ModuleChannel helpers.
+6. Dual listeners: HTTP `:8080`, gRPC HTTPS `:5000` (internal) via `Bardie.Module.Channel` helpers.
 7. Health/readiness endpoints suitable for Compose.
 
 ### Exit criteria

@@ -5,7 +5,9 @@
     <AssemblyName>Bardie.Orchestrator.Auth</AssemblyName>
     <IsPackable>true</IsPackable>
     <PackageId>Bardie.Orchestrator.Auth</PackageId>
+    <Version>0.1.0</Version>
     <Description>Auth module orchestrator library for Bardie hosts.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +21,10 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

@@ -110,6 +110,8 @@ Offline provision helper: `IModuleCertificateIssuer.ProvisionPresharedClientCert
 
 ## Related
 
+- Participant Program bootstrap + Bardie Compose env: [`Bardie.Module.Hosting`](../Bardie.Module.Hosting/README.md)
+- JWT-minting auth adapters: [`Bardie.Module.Auth`](../Bardie.Module.Auth/README.md)
 - Architecture: [module-channel.md](../../docs/architecture/operations/module-channel.md)
 - Registry contract: [grpc-module-registry.md](../../docs/architecture/interfaces/grpc-module-registry.md)
 - Config knobs: [configuration.md](../../docs/architecture/operations/configuration.md)
