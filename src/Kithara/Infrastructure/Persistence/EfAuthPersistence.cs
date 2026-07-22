@@ -139,6 +139,28 @@ public sealed class EfAuthPersistence : IAuthPersistence
             binding.UserId,
             binding.User.Kind.ToString(),
             binding.User.Status,
-            binding.User.MustRotateCredentials);
+            binding.User.MustRotateCredentials,
+            binding.User.GuestStrunaId);
+    }
+
+    public async Task<AuthUserRecord?> FindUserByIdAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var user = await db.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken)
+            .ConfigureAwait(false);
+        if (user is null)
+        {
+            return null;
+        }
+
+        return new AuthUserRecord(
+            user.Id,
+            user.Kind.ToString(),
+            user.Status,
+            user.MustRotateCredentials,
+            user.GuestStrunaId);
     }
 }

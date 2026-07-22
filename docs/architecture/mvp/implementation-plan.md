@@ -73,6 +73,7 @@ flowchart TB
 | Models  | ADR 006 EF entities + migrations                                     | Full queue CRUD + guest ACL surface (6)     |
 | Auth    | Orch + Bes + JWT Bearer `/api/auth/*` + `seedAdmin` bootstrap        | Guest exchange REST (6); Plume login UI (7) |
 | Audio   | Session FIFO + Magpie PCM proof (in progress)                        | FFmpeg supervisor → Stream Server (4–5)     |
+| Control | Phase 6 REST (no FFmpeg): search, Struna CRUD, play/queue/skip/pause/guest | Encode-alive silence (4); ICY metadata sync (5) |
 | Modules | Registry + mTLS; Bes live; Magpie source RPCs (in progress)          | Plume REST (7)                              |
 ## Phase map
 
@@ -247,10 +248,12 @@ libs/
 
 ### Work (Kithara)
 
-1. Registry dials module advertise address for `Search` / `StartTrack` / `StopTrack` / `TrackStatus`.
-2. Temporary **dev harness**: create a session FIFO path, call Magpie `StartTrack`, verify PCM bytes appear (even before Stream Server).
-3. Storage interface MVP: local driver + opaque keys under `tunes/<source_slug>/…`; Magpie put/get via `BlobStorage`.
-4. Library write path: Magpie dials `Library.EnsureTune` after Put on cache miss (Kithara owns EF upsert).
+1. Registry dials module advertise address for `Search` / `StartTrack` / `StopTrack` / `TrackStatus` — **done** (`Bardie.Orchestrator.Source` real dials + capability gates).
+2. Temporary **dev harness**: create a session FIFO path, call Magpie `StartTrack`, verify PCM bytes appear (even before Stream Server) — REST create/play + Local `scripts/phase3-source-smoke.sh`.
+3. Storage interface MVP: local driver + opaque keys under `tunes/<source_slug>/…`; Magpie put/get via `BlobStorage` — **done**.
+4. Library write path: Magpie dials `Library.EnsureTune` after Put on cache miss (Kithara owns EF upsert) — **done** (host); Magpie consumer pending.
+5. **Phase 6 control REST (landed under Phase 3, no FFmpeg):** search + principal **search cache**; Struna create/get/delete; `/listen` + `/control` lists; play/quickplay/pause/skip/now-playing; queue/quickqueue; guest exchange. Session FIFO only — encode-alive is Phase 4.
+6. Shared source-module lib `Bardie.Module.Source` — **done** (Magpie scaffold consumes next).
 
 
 
@@ -289,10 +292,10 @@ libs/
 ### Work
 
 1. Hosted **FFmpeg supervisor** (not request-scoped) + `IDbContextFactory` — discard spike singleton+scoped pattern.
-2. `POST /api/streams` → alive: reserve slug, create session FIFO, start silence feeder, start FFmpeg reading FIFO.
-3. `DELETE /api/streams/{id}` → `StopTrack` first, then kill FFmpeg, close FIFO, free slug.
-4. Pause = silence feeder on; empty `play` = unpause ([playback-control](../domains/playback-control.md)).
-5. Queue head → `StartTrack` / skip → `StopTrack` + next; **never** restart FFmpeg on queue shift.
+2. Promote create from **control-alive** (slug + FIFO already) to **encode-alive**: start silence feeder + FFmpeg reading the session FIFO.
+3. `DELETE /api/streams/{id}` → `StopTrack` first, then kill FFmpeg, close FIFO, free slug (guest teardown already clears search cache).
+4. Pause = silence feeder on; empty `play` = unpause ([playback-control](../domains/playback-control.md)) — today empty play is `ResumeTrack` only.
+5. Queue head → `StartTrack` / skip → `StopTrack` + next; **never** restart FFmpeg on queue shift (queue/skip REST already dials modules).
 6. Encode mode wiring (`compatibility` | `quality`) once profiles are defined (open question).
 
 
@@ -338,14 +341,24 @@ libs/
 
 **Why:** Clients (Plume or raw HTTP) need the full DJ surface.
 
-### Work
+### Already under Phase 3
 
-1. Play / quickplay / queue / quickqueue / skip / pause / delete / now-playing / queue CRUD ([rest-api](../interfaces/rest-api.md)).
-2. Quicksearch / search fan-out via registry capabilities.
-3. Guest code → `POST …/guest/exchange` → **ephemeral guest user** + Kithara-minted JWT (+ refresh); rate limit; destroy guests with Struna.
-4. Control ACL: private vs protected (ephemeral guests); Struna ownership checks (still open — see below).
-5. Global search + principal-scoped result cache; quickplay source priority (multi-source ready).
-6. `GET /api/streams/{id}/now-playing` aligned with ICY metadata.
+| Slice | Status |
+|-------|--------|
+| `GET /api/search/quick` (`q`/`query`), `POST /api/search` + principal **search cache** (≠ history) | **Done** |
+| `GET /api/streams/listen`, `GET /api/streams/control` | **Done** |
+| `POST/GET/DELETE /api/streams`, `POST …/play` / `quickplay` (Neck FIFO; no FFmpeg) | **Done** |
+| `POST …/pause`, `POST …/skip`, `GET …/now-playing` | **Done** (pause = module `PauseTrack`; silence feeder Phase 4) |
+| Queue / quickqueue CRUD | **Done** |
+| Guest exchange + destroy guests with Struna (+ clear their search cache) | **Done** (rate-limit still open) |
+| Owner + grant (+ protected-control guest) ACL stubs | **Done** (managed ceiling / grant CRUD later) |
+
+### Remaining work
+
+1. Rate-limit `POST …/guest/exchange`.
+2. Grant management API + managed-user permission ceiling (“full auth” depth).
+3. Pause-as-silence + empty `play` unpause once Phase 4 Neck silence feeder exists.
+4. `GET /api/streams/{id}/now-playing` aligned with ICY metadata (Phase 5 Stream Server).
 
 
 

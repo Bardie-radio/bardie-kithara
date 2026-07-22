@@ -40,9 +40,9 @@ Source and auth modules register via gRPC on startup. Compose sets:
 
 Separate `bes` container. User + `UserAuthBinding` rows stay in Kithara’s DB — Bes has no separate auth DB. JWT mint / refresh lifetime knobs live on Bes (not on Kithara).
 
-## Reserved slugs
+## Struna slug uniqueness
 
-Configured list must stay consistent: `api`, `stream`, `admin`, `player`, …
+Alive Struna slugs must be unique among themselves. They are **not** blocked against edge path segments (`api`, `player`, …): public listen is always `/stream/{slug}`, so collisions with other route trees are impossible by prefix. See [streams](../domains/streams.md).
 
 **Related:** [deployment.md](deployment.md) · [observability.md](observability.md) · [module-channel.md](module-channel.md) · [security-audit-module-mesh.md](security-audit-module-mesh.md) · [auth-adapters](../domains/auth-adapters.md)
 

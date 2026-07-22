@@ -41,6 +41,15 @@ Token generated at creation (**Kithara-owned** Struna secret); owner can rotate.
 | **protected** | Short **guest code** → Kithara creates an **ephemeral guest user** + mints JWTs for that user |
 | **public** | **Not supported** |
 
+### REST discovery lists
+
+| Path | Filter |
+|------|--------|
+| `GET /api/streams/listen` | Principal may listen (public for all; protected/private → owner **or** grant) |
+| `GET /api/streams/control` | Principal may DJ (owner **or** grant **or** protected-control ephemeral guest for that Struna) |
+
+Today’s ACL is owner + grant (+ guest for protected control). Managed-user permission ceiling and grant CRUD API deepen later — stub comments in code say **full auth on Phase 6**. Listen-token holders are gated on `/stream/{slug}` (Phase 5), not via these lists.
+
 ### Protected control: guest code → ephemeral guest user
 
 Do **not** send the short guest code on every API call — it is brute-forceable and sticky in logs/history.

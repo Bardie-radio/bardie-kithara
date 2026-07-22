@@ -55,7 +55,7 @@ Loader: `ModuleManifestLoader` + `BuildRegisterRequest(joinSecret, advertiseAddr
 
 ## Bardie capabilities vocabulary (host convention)
 
-Capabilities are **open strings** on the wire. ModuleChannel never interprets them. The tables below are **Bardie host** conventions (Kithara’s Auth Orchestrator gates RPCs on these values via `Bardie.Orchestrator.Auth.WellKnownAuthCapabilities` / host `WellKnownSourceCapabilities`) — documented here so module authors see the vocabulary next to Register.
+Capabilities are **open strings** on the wire. ModuleChannel never interprets them. The tables below are **Bardie host** conventions (Kithara’s Auth Orchestrator gates RPCs on these values via `Bardie.Orchestrator.Auth.WellKnownAuthCapabilities` / `Bardie.Orchestrator.Source.WellKnownSourceCapabilities`) — documented here so module authors see the vocabulary next to Register.
 
 | Put in `capabilities[]` | Keep elsewhere |
 |-------------------------|----------------|

@@ -1,9 +1,9 @@
-namespace Kithara.Features.Modules;
+namespace Bardie.Orchestrator.Source;
 
 /// <summary>
 /// Bardie host conventions for source-module <c>RegisterRequest.capabilities</c>.
-/// Mesh contract treats capabilities as open strings; only this host gates fan-out / track RPCs on these values.
-/// ModuleChannel does not know about these constants.
+/// Mesh contract treats capabilities as open strings; only the Source Orchestrator
+/// (and host wrappers) gate RPCs on these values. ModuleChannel does not interpret them.
 /// </summary>
 public static class WellKnownSourceCapabilities
 {

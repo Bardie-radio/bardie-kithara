@@ -27,6 +27,9 @@ public interface IAuthPersistence
         string providerSlug,
         string externalSubject,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Resolves any user row by id (login subjects and ephemeral guests).</summary>
+    Task<AuthUserRecord?> FindUserByIdAsync(Guid userId, CancellationToken cancellationToken = default);
 }
 
 public sealed record AuthBindingRecord(
@@ -40,7 +43,8 @@ public sealed record AuthUserRecord(
     Guid UserId,
     string Kind,
     string Status,
-    bool MustRotateCredentials);
+    bool MustRotateCredentials,
+    Guid? GuestStrunaId = null);
 
 public sealed record EnsureUserBindingRequest(
     string ProviderSlug,

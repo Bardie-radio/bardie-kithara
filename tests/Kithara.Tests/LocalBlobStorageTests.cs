@@ -1,5 +1,14 @@
+using Bardie.Module.Channel.Certificates;
+using Bardie.Module.Channel.Channel;
+using Bardie.Orchestrator.Source;
+using Bardie.Orchestrator.Source.Catalog;
+using Bardie.Orchestrator.Source.Ports;
 using Kithara.Infrastructure.Neck;
+using Kithara.Infrastructure.Persistence;
 using Kithara.Infrastructure.Storage;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit;
@@ -93,6 +102,8 @@ public class NeckStrunaFifoTests
         {
             var neck = new Neck(
                 Options.Create(new NeckOptions { StrunaFifoRoot = root }),
+                new ThrowingDbContextFactory(),
+                CreateUnusedSourceOrchestrator(),
                 NullLogger<Neck>.Instance);
 
             var strunaId = Guid.NewGuid();
@@ -114,5 +125,81 @@ public class NeckStrunaFifoTests
                 Directory.Delete(root, recursive: true);
             }
         }
+    }
+
+    private static SourceModuleOrchestrator CreateUnusedSourceOrchestrator() =>
+        new(
+            new SourceModuleCatalog(),
+            new UnusedBlobStorage(),
+            new UnusedChannelFactory(),
+            new UnloadedCertificateStore(),
+            new ConfigurationBuilder().Build(),
+            NullLogger<SourceModuleOrchestrator>.Instance);
+
+    private sealed class ThrowingDbContextFactory : IDbContextFactory<KitharaDbContext>
+    {
+        public KitharaDbContext CreateDbContext() =>
+            throw new InvalidOperationException("DB not used in FIFO unit test.");
+
+        public Task<KitharaDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("DB not used in FIFO unit test.");
+    }
+
+    private sealed class UnusedBlobStorage : IBlobStorage
+    {
+        public Task<long> PutAsync(
+            string key,
+            Stream content,
+            string? contentType = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0L);
+
+        public Task<BlobReadResult?> OpenReadAsync(string key, CancellationToken cancellationToken = default) =>
+            Task.FromResult<BlobReadResult?>(null);
+
+        public Task<bool> ExistsAsync(string key, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task DeleteAsync(string key, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+    }
+
+    private sealed class UnusedChannelFactory : IModuleGrpcChannelFactory
+    {
+        public Grpc.Net.Client.GrpcChannel CreateChannel(
+            string address,
+            System.Security.Cryptography.X509Certificates.X509Certificate2? clientCertificate = null,
+            bool trustRemoteServerCertificate = false,
+            bool ownsClientCertificate = false) =>
+            throw new InvalidOperationException();
+    }
+
+    private sealed class UnloadedCertificateStore : IModuleCertificateStore
+    {
+        public bool IsLoaded => false;
+        public string CaThumbprint => string.Empty;
+        public string CaCertificatePem => string.Empty;
+        public System.Security.Cryptography.X509Certificates.X509Certificate2 CaCertificate =>
+            throw new InvalidOperationException();
+        public System.Security.Cryptography.X509Certificates.X509Certificate2 ServerCertificate =>
+            throw new InvalidOperationException();
+        public System.Security.Cryptography.X509Certificates.X509Certificate2 OpenOutboundClientIdentity() =>
+            throw new InvalidOperationException();
+        public bool TryGetPresharedClientMaterial(
+            string slug,
+            out System.Security.Cryptography.X509Certificates.X509Certificate2? certificate)
+        {
+            certificate = null;
+            return false;
+        }
+
+        public bool TryGetPresharedClientExpiry(string slug, out DateTimeOffset expiresAt)
+        {
+            expiresAt = default;
+            return false;
+        }
+
+        public Task EnsureLoadedAsync(CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 }

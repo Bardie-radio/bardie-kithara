@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Bardie.Contracts\Bardie.Contracts.csproj" />
     <ProjectReference Include="..\Bardie.Module.Channel\Bardie.Module.Channel.csproj" />
   </ItemGroup>
 
@@ -18,6 +19,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
   </ItemGroup>
 
   <ItemGroup>

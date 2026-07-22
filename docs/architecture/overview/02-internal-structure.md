@@ -75,6 +75,7 @@ libs/
   Bardie.Module.Channel/      # mTLS + manifest + participant/host dial helpers
   Bardie.Module.Hosting/      # ASP.NET participant bootstrap + Bardie Compose env aliases
   Bardie.Module.Auth/         # JWT mint / JWKS Register helpers for auth adapters
+  Bardie.Module.Source/       # SourceModule base, FIFO sink, job registry, host dial clients
   Bardie.Orchestrator.Auth/
   Bardie.Orchestrator.Source/
 ```

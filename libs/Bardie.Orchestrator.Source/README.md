@@ -4,13 +4,14 @@ Source module **orchestrator** library for Bardie hosts (Kithara today; external
 
 **Package id:** `Bardie.Orchestrator.Source` · **Version:** `0.1.0` · **TFM:** `net10.0`
 
-Depends on [`Bardie.Module.Channel`](../Bardie.Module.Channel/README.md) (Contracts transitively).
+Depends on [`Bardie.Contracts`](../Bardie.Contracts/README.md) + [`Bardie.Module.Channel`](../Bardie.Module.Channel/README.md).
 
 ## What it owns
 
 - Source module catalog
 - Host port `IBlobStorage` for shared library blob access
-- Dial helpers via Module.Channel (Search / StartTrack land with Phase 3)
+- Capability vocabulary (`WellKnownSourceCapabilities`)
+- Per-call dials: `SearchAsync`, `StartTrackAsync`, `StopTrackAsync`, `PauseTrackAsync`, `ResumeTrackAsync`, `TrackStatusAsync`
 
 ## Consume
 
