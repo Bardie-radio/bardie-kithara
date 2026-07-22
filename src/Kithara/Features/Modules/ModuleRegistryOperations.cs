@@ -1,8 +1,8 @@
-using Bardie.Auth.Orchestrator.Catalog;
-using Bardie.ModuleChannel;
-using Bardie.ModuleChannel.Certificates;
+using Bardie.Orchestrator.Auth.Catalog;
+using Bardie.Module.Channel;
+using Bardie.Module.Channel.Certificates;
 using Bardie.Modules.V1;
-using Bardie.Source.Orchestrator.Catalog;
+using Bardie.Orchestrator.Source.Catalog;
 using Grpc.Core;
 using Microsoft.Extensions.Options;
 
@@ -224,7 +224,7 @@ public sealed class ModuleRegistryOperations
 
             case WellKnownModuleKinds.Source:
                 var fields = request.Source?.SearchFields
-                    .Select(f => new Bardie.Source.Orchestrator.Catalog.SearchFieldDescriptor
+                    .Select(f => new Bardie.Orchestrator.Source.Catalog.SearchFieldDescriptor
                     {
                         Name = f.Name,
                         Required = f.Required,

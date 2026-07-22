@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Bardie.Orchestrator.Source</RootNamespace>
+    <AssemblyName>Bardie.Orchestrator.Source</AssemblyName>
+    <IsPackable>true</IsPackable>
+    <PackageId>Bardie.Orchestrator.Source</PackageId>
+    <Description>Source module orchestrator library for Bardie hosts.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Bardie.Module.Channel\Bardie.Module.Channel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+</Project>

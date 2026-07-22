@@ -167,9 +167,9 @@ src/Kithara/
     Persistence/ Observability/ Storage/ Neck/
 libs/
   Bardie.Contracts/
-  Bardie.ModuleChannel/
-  Bardie.Auth.Orchestrator/
-  Bardie.Source.Orchestrator/
+  Bardie.Module.Channel/
+  Bardie.Orchestrator.Auth/
+  Bardie.Orchestrator.Source/
 ```
 
 2. Config: `DbProvider` / `DbConnectionString`, `BARDIE_JOIN_SECRETS`, `OTEL_EXPORTER_OTLP_ENDPOINT`, `BARDIE_MODULE_MTLS_BOOTSTRAP`, `BARDIE_GRPC_TLS_*` ([configuration](../operations/configuration.md)).

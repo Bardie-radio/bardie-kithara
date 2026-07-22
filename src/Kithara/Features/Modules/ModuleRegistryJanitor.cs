@@ -1,5 +1,5 @@
-using Bardie.Auth.Orchestrator.Catalog;
-using Bardie.Source.Orchestrator.Catalog;
+using Bardie.Orchestrator.Auth.Catalog;
+using Bardie.Orchestrator.Source.Catalog;
 using Microsoft.Extensions.Options;
 
 namespace Kithara.Features.Modules;

@@ -14,17 +14,17 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kithara.DummyRegistrar", "s
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bardie.Contracts", "libs\Bardie.Contracts\Bardie.Contracts.csproj", "{B100000A-0000-4000-8000-00000000000A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bardie.ModuleChannel", "libs\Bardie.ModuleChannel\Bardie.ModuleChannel.csproj", "{B1000003-0000-4000-8000-000000000003}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bardie.Module.Channel", "libs\Bardie.Module.Channel\Bardie.Module.Channel.csproj", "{B1000003-0000-4000-8000-000000000003}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bardie.Auth.Orchestrator", "libs\Bardie.Auth.Orchestrator\Bardie.Auth.Orchestrator.csproj", "{B1000004-0000-4000-8000-000000000004}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bardie.Orchestrator.Auth", "libs\Bardie.Orchestrator.Auth\Bardie.Orchestrator.Auth.csproj", "{B1000004-0000-4000-8000-000000000004}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bardie.Source.Orchestrator", "libs\Bardie.Source.Orchestrator\Bardie.Source.Orchestrator.csproj", "{B1000005-0000-4000-8000-000000000005}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bardie.Orchestrator.Source", "libs\Bardie.Orchestrator.Source\Bardie.Orchestrator.Source.csproj", "{B1000005-0000-4000-8000-000000000005}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bardie.ModuleChannel.Tests", "tests\Bardie.ModuleChannel.Tests\Bardie.ModuleChannel.Tests.csproj", "{B1000006-0000-4000-8000-000000000006}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bardie.Module.Channel.Tests", "tests\Bardie.Module.Channel.Tests\Bardie.Module.Channel.Tests.csproj", "{B1000006-0000-4000-8000-000000000006}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bardie.Auth.Orchestrator.Tests", "tests\Bardie.Auth.Orchestrator.Tests\Bardie.Auth.Orchestrator.Tests.csproj", "{B1000007-0000-4000-8000-000000000007}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bardie.Orchestrator.Auth.Tests", "tests\Bardie.Orchestrator.Auth.Tests\Bardie.Orchestrator.Auth.Tests.csproj", "{B1000007-0000-4000-8000-000000000007}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bardie.Source.Orchestrator.Tests", "tests\Bardie.Source.Orchestrator.Tests\Bardie.Source.Orchestrator.Tests.csproj", "{B1000008-0000-4000-8000-000000000008}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bardie.Orchestrator.Source.Tests", "tests\Bardie.Orchestrator.Source.Tests\Bardie.Orchestrator.Source.Tests.csproj", "{B1000008-0000-4000-8000-000000000008}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kithara.Tests", "tests\Kithara.Tests\Kithara.Tests.csproj", "{B1000009-0000-4000-8000-000000000009}"
 EndProject

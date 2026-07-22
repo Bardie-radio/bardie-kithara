@@ -1,8 +1,8 @@
-using Bardie.Auth.Orchestrator;
-using Bardie.ModuleChannel;
-using Bardie.ModuleChannel.Certificates;
-using Bardie.ModuleChannel.Hosting;
-using Bardie.Source.Orchestrator;
+using Bardie.Orchestrator.Auth;
+using Bardie.Module.Channel;
+using Bardie.Module.Channel.Certificates;
+using Bardie.Module.Channel.Hosting;
+using Bardie.Orchestrator.Source;
 using Kithara.Features.Auth;
 using Kithara.Features.Library;
 using Kithara.Features.Modules;

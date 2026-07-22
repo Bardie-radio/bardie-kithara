@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Bardie.Auth.Orchestrator.Catalog;
+using Bardie.Orchestrator.Auth.Catalog;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 
