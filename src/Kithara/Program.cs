@@ -3,6 +3,7 @@ using Bardie.ModuleChannel;
 using Bardie.ModuleChannel.Certificates;
 using Bardie.ModuleChannel.Hosting;
 using Bardie.Source.Orchestrator;
+using Kithara.Features.Auth;
 using Kithara.Features.Modules;
 using Kithara.Infrastructure.Observability;
 using Kithara.Infrastructure.Persistence;
@@ -24,6 +25,8 @@ builder.Services.AddSourceModuleOrchestrator(registerModuleChannel: false);
 
 builder.Services.AddKitharaPersistence(builder.Configuration);
 builder.Services.AddModuleRegistry(builder.Configuration);
+builder.Services.AddKitharaAuthAuthentication(builder.Configuration);
+builder.Services.AddHostedService<SeedAdminBootstrapHostedService>();
 
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseReadyHealthCheck>("database", tags: ["ready"])
@@ -35,9 +38,16 @@ var app = builder.Build();
 var certificateStore = app.Services.GetRequiredService<IModuleCertificateStore>();
 await certificateStore.EnsureLoadedAsync().ConfigureAwait(false);
 
+// Ensure guest signing key material exists at boot (mint unused until Phase 6).
+_ = app.Services.GetRequiredService<GuestJwtSigningKeyStore>().GetSigningKey();
+
 await app.MigrateKitharaDatabaseAsync().ConfigureAwait(false);
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapKitharaHealthEndpoints();
+app.MapAuthEndpoints();
 app.MapModuleRegistry();
 
 app.Run();

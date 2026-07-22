@@ -26,6 +26,7 @@ public sealed class KitharaDbContext : DbContext
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Status).HasMaxLength(32).IsRequired();
             entity.Property(x => x.ManagedByModuleSlug).HasMaxLength(64);
+            entity.Property(x => x.MustRotateCredentials).IsRequired();
             entity.HasIndex(x => x.Kind);
         });
 

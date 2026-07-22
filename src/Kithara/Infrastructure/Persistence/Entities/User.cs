@@ -15,6 +15,7 @@ public sealed class User
     public string Status { get; set; } = "active";
     public string? ManagedByModuleSlug { get; set; }
     public Guid? GuestStrunaId { get; set; }
+    public bool MustRotateCredentials { get; set; }
 
     public ICollection<UserAuthBinding> AuthBindings { get; set; } = new List<UserAuthBinding>();
 }

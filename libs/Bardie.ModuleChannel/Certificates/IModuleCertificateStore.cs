@@ -10,6 +10,7 @@ public interface IModuleCertificateStore
 
     bool IsLoaded { get; }
 
+    /// <summary>Kestrel-bound host server certificate. Do not Export or dispose this instance for dialing.</summary>
     X509Certificate2 ServerCertificate { get; }
 
     X509Certificate2 CaCertificate { get; }
@@ -17,6 +18,12 @@ public interface IModuleCertificateStore
     string CaCertificatePem { get; }
 
     string CaThumbprint { get; }
+
+    /// <summary>
+    /// Short-lived host identity for one outbound host→module mTLS dial (loaded from PEM).
+    /// Caller or channel factory must <see cref="IDisposable.Dispose"/> — do not cache.
+    /// </summary>
+    X509Certificate2 OpenOutboundClientIdentity();
 
     /// <summary>
     /// Returns true when a pre-placed client cert (+ key) for <paramref name="slug"/> exists under the preshared directory.

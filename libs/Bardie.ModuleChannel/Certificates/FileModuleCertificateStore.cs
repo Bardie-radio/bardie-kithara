@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -14,6 +13,8 @@ public sealed class FileModuleCertificateStore : IModuleCertificateStore, IDispo
     private X509Certificate2? _ca;
     private X509Certificate2? _server;
     private string? _caPem;
+    private string? _serverCertPath;
+    private string? _serverKeyPath;
     private bool _disposed;
 
     public FileModuleCertificateStore(
@@ -37,6 +38,17 @@ public sealed class FileModuleCertificateStore : IModuleCertificateStore, IDispo
 
     public string CaThumbprint => CaCertificate.Thumbprint;
 
+    public X509Certificate2 OpenOutboundClientIdentity()
+    {
+        if (_serverCertPath is null || _serverKeyPath is null || !IsLoaded)
+        {
+            throw new InvalidOperationException("TLS material is not loaded. Call EnsureLoadedAsync first.");
+        }
+
+        // Fresh PEM load — never Export the Kestrel-bound ServerCertificate; dispose after the dial.
+        return CertificateMaterial.LoadPemPair(_serverCertPath, _serverKeyPath);
+    }
+
     public async Task EnsureLoadedAsync(CancellationToken cancellationToken = default)
     {
         if (IsLoaded)
@@ -56,34 +68,39 @@ public sealed class FileModuleCertificateStore : IModuleCertificateStore, IDispo
                 Directory.CreateDirectory(_options.TlsDataPath);
                 var caCertPath = Path.Combine(_options.TlsDataPath, "ca.crt.pem");
                 var caKeyPath = Path.Combine(_options.TlsDataPath, "ca.key.pem");
-                var serverCertPath = Path.Combine(_options.TlsDataPath, "server.crt.pem");
-                var serverKeyPath = Path.Combine(_options.TlsDataPath, "server.key.pem");
+                _serverCertPath = Path.Combine(_options.TlsDataPath, "server.crt.pem");
+                _serverKeyPath = Path.Combine(_options.TlsDataPath, "server.key.pem");
 
                 if (File.Exists(caCertPath) && File.Exists(caKeyPath))
                 {
-                    _ca = LoadCertificateWithKey(caCertPath, caKeyPath);
+                    _ca = CertificateMaterial.LoadPemPair(caCertPath, caKeyPath);
+                    CertificateMaterial.RestrictKeyFilePermissions(caKeyPath);
                     _logger.LogInformation("Loaded module CA from {Path}", caCertPath);
                 }
                 else
                 {
                     _ca = CreateSelfSignedCa();
-                    WritePemPair(caCertPath, caKeyPath, _ca);
+                    CertificateMaterial.WritePemPair(caCertPath, caKeyPath, _ca);
                     _logger.LogInformation("Generated module CA at {Path}", caCertPath);
                 }
 
-                if (File.Exists(serverCertPath) && File.Exists(serverKeyPath))
+                if (File.Exists(_serverCertPath) && File.Exists(_serverKeyPath))
                 {
-                    _server = LoadCertificateWithKey(serverCertPath, serverKeyPath);
-                    _logger.LogInformation("Loaded module gRPC server cert from {Path}", serverCertPath);
+                    _server = CertificateMaterial.LoadPemPair(_serverCertPath, _serverKeyPath);
+                    CertificateMaterial.RestrictKeyFilePermissions(_serverKeyPath);
+                    _logger.LogInformation("Loaded module gRPC server cert from {Path}", _serverCertPath);
                 }
                 else
                 {
                     _server = CreateServerCertificate(_ca);
-                    WritePemPair(serverCertPath, serverKeyPath, _server);
-                    _logger.LogInformation("Generated module gRPC server cert at {Path}", serverCertPath);
+                    CertificateMaterial.WritePemPair(_serverCertPath, _serverKeyPath, _server);
+                    // Reload so in-memory handle matches on-disk PEM (outbound dials load from the same files).
+                    _server.Dispose();
+                    _server = CertificateMaterial.LoadPemPair(_serverCertPath, _serverKeyPath);
+                    _logger.LogInformation("Generated module gRPC server cert at {Path}", _serverCertPath);
                 }
 
-                _caPem = ExportCertificatePem(_ca);
+                _caPem = CertificateMaterial.ExportCertificatePem(_ca);
             }
         }, cancellationToken).ConfigureAwait(false);
     }
@@ -104,7 +121,7 @@ public sealed class FileModuleCertificateStore : IModuleCertificateStore, IDispo
             return false;
         }
 
-        certificate = LoadCertificateWithKey(certPath, keyPath);
+        certificate = CertificateMaterial.LoadPemPair(certPath, keyPath);
         return true;
     }
 
@@ -189,7 +206,7 @@ public sealed class FileModuleCertificateStore : IModuleCertificateStore, IDispo
         var notBefore = DateTimeOffset.UtcNow.AddDays(-1);
         var notAfter = notBefore.AddYears(10);
         var cert = request.CreateSelfSigned(notBefore, notAfter);
-        return PersistWithPrivateKey(cert, rsa);
+        return CertificateMaterial.PersistWithPrivateKey(cert, rsa);
     }
 
     private X509Certificate2 CreateServerCertificate(X509Certificate2 ca)
@@ -205,7 +222,10 @@ public sealed class FileModuleCertificateStore : IModuleCertificateStore, IDispo
             new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment, true));
         request.CertificateExtensions.Add(
             new X509EnhancedKeyUsageExtension(
-                [new Oid("1.3.6.1.5.5.7.3.1")],
+                [
+                    new Oid("1.3.6.1.5.5.7.3.1"), // serverAuth — Kestrel module gRPC
+                    new Oid("1.3.6.1.5.5.7.3.2"), // clientAuth — host→module dials
+                ],
                 true));
 
         var san = new SubjectAlternativeNameBuilder();
@@ -220,43 +240,12 @@ public sealed class FileModuleCertificateStore : IModuleCertificateStore, IDispo
         var notBefore = DateTimeOffset.UtcNow.AddMinutes(-5);
         var notAfter = notBefore.AddYears(5);
         var serial = RandomNumberGenerator.GetBytes(16);
-        using var issued = request.Create(ca, notBefore, notAfter, serial);
-        return PersistWithPrivateKey(issued, rsa);
-    }
-
-    private static X509Certificate2 PersistWithPrivateKey(X509Certificate2 cert, RSA key)
-    {
-        // CreateSelfSigned already attaches the key; CertificateRequest.Create does not.
-        if (cert.HasPrivateKey)
-        {
-            var selfSignedPfx = cert.Export(X509ContentType.Pfx, string.Empty);
-            return X509CertificateLoader.LoadPkcs12(selfSignedPfx, string.Empty, X509KeyStorageFlags.Exportable);
-        }
-
-        using var withKey = cert.CopyWithPrivateKey(key);
-        var pfx = withKey.Export(X509ContentType.Pfx, string.Empty);
-        return X509CertificateLoader.LoadPkcs12(pfx, string.Empty, X509KeyStorageFlags.Exportable);
-    }
-
-    private static X509Certificate2 LoadCertificateWithKey(string certPath, string keyPath)
-    {
-        var certPem = File.ReadAllText(certPath);
-        var keyPem = File.ReadAllText(keyPath);
-        using var cert = X509Certificate2.CreateFromPem(certPem, keyPem);
-        var pfx = cert.Export(X509ContentType.Pfx, string.Empty);
-        return X509CertificateLoader.LoadPkcs12(pfx, string.Empty, X509KeyStorageFlags.Exportable);
-    }
-
-    private static void WritePemPair(string certPath, string keyPath, X509Certificate2 cert)
-    {
-        File.WriteAllText(certPath, ExportCertificatePem(cert), Encoding.ASCII);
-        using var key = cert.GetRSAPrivateKey()
-            ?? throw new InvalidOperationException("Certificate has no RSA private key.");
-        File.WriteAllText(keyPath, key.ExportPkcs8PrivateKeyPem(), Encoding.ASCII);
+        var issued = request.Create(ca, notBefore, notAfter, serial);
+        return CertificateMaterial.PersistWithPrivateKey(issued, rsa);
     }
 
     internal static string ExportCertificatePem(X509Certificate2 cert) =>
-        PemEncoding.WriteString("CERTIFICATE", cert.RawData);
+        CertificateMaterial.ExportCertificatePem(cert);
 
     internal static string ExportPrivateKeyPem(RSA key) => key.ExportPkcs8PrivateKeyPem();
 

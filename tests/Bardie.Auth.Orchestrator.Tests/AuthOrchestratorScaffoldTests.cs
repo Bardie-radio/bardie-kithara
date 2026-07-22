@@ -34,5 +34,22 @@ public class AuthOrchestratorScaffoldTests
 
         public Task<int> CountUsersAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(0);
+
+        public Task<AuthBindingRecord?> FindBindingBySubjectAsync(
+            string providerSlug,
+            string externalSubject,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<AuthBindingRecord?>(null);
+
+        public Task<Guid> EnsureUserWithBindingAsync(
+            EnsureUserBindingRequest request,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(Guid.NewGuid());
+
+        public Task<AuthUserRecord?> FindUserByBindingSubjectAsync(
+            string providerSlug,
+            string externalSubject,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<AuthUserRecord?>(null);
     }
 }

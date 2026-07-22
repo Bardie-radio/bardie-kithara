@@ -15,7 +15,9 @@ C# stubs are generated with `GrpcServices=Both` (client + server). `.proto` file
 
 | Context | How |
 |---------|-----|
-| Multi-root / sibling `kithara/libs` | `ProjectReference` to this project |
-| Standalone CI / published consumers | `PackageReference` to `Bardie.Contracts` |
+| Multi-root / sibling `kithara/libs` | `ProjectReference` to this project (Bes uses `Directory.Build.props` when `../kithara/libs` exists) |
+| Standalone CI / published consumers | `PackageReference` to `Bardie.Contracts` `0.1.0` |
+
+Pack with ModuleChannel: `dotnet pack libs/Bardie.Contracts/Bardie.Contracts.csproj libs/Bardie.ModuleChannel/Bardie.ModuleChannel.csproj -c Release`.
 
 Source modules (`SourceModule`) land in a later freeze; until then Magpie scaffolds against the interface sketch.

@@ -31,7 +31,7 @@ Per-request `ValidateToken` against the module is **not** the hot path — Kitha
 
 ## Capabilities (Registry)
 
-Capabilities are **optional feature flags within kind `auth`**. They gate host RPCs; they are not the module type and not core verbs every auth adapter must speak (`Health` / `GetProviders` / `Authenticate` / `Refresh`).
+Capabilities are **optional feature flags within kind `auth`**. They gate host RPCs; they are not the module type and not core verbs every auth adapter must speak (`Health` / `GetProviders` / `Authenticate` / `Refresh`). Full mesh vocabulary (source + auth, what belongs in `capabilities[]` vs elsewhere) lives in [module-channel.md](../operations/module-channel.md).
 
 | Capability | Status | Meaning |
 |------------|--------|---------|
@@ -41,7 +41,7 @@ Capabilities are **optional feature flags within kind `auth`**. They gate host R
 
 **Not a module capability:** account linking stays **Kithara’s story** (explicit multi-provider link in the user DB / orchestrator). Auth adapters only prove identity for their provider — they do not advertise `accountLink`.
 
-**Bes** advertises `seedAdmin` only for MVP. **Argus** typically does **not** — IdP users are discovered/linked, not locally invented.
+**Bes** advertises `seedAdmin` only for MVP (`module.manifest.json`). **Argus** typically does **not** — IdP users are discovered/linked, not locally invented.
 
 ### `SeedAdmin`
 

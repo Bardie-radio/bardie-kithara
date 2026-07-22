@@ -1,3 +1,4 @@
+using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using Bardie.ModuleChannel.Certificates;
 using Grpc.Net.Client;
@@ -8,7 +9,21 @@ namespace Bardie.ModuleChannel.Channel;
 /// <summary>Creates outbound gRPC channels that trust the module CA (and optionally present a client cert).</summary>
 public interface IModuleGrpcChannelFactory
 {
-    GrpcChannel CreateChannel(string address, X509Certificate2? clientCertificate = null);
+    /// <summary>
+    /// Dial a peer. When <paramref name="trustRemoteServerCertificate"/> is false (default),
+    /// the remote server cert must chain to the mesh CA. When true, any present server cert is
+    /// accepted — used for host→module work RPCs where modules present a self-signed work-port cert;
+    /// mesh identity is still proven by the client certificate Kithara presents.
+    /// </summary>
+    /// <param name="ownsClientCertificate">
+    /// When true, the channel disposes <paramref name="clientCertificate"/> when the channel is disposed
+    /// (use with short-lived <see cref="IModuleCertificateStore.OpenOutboundClientIdentity"/> copies).
+    /// </param>
+    GrpcChannel CreateChannel(
+        string address,
+        X509Certificate2? clientCertificate = null,
+        bool trustRemoteServerCertificate = false,
+        bool ownsClientCertificate = false);
 }
 
 public sealed class ModuleGrpcChannelFactory : IModuleGrpcChannelFactory
@@ -24,7 +39,11 @@ public sealed class ModuleGrpcChannelFactory : IModuleGrpcChannelFactory
         _options = options.Value;
     }
 
-    public GrpcChannel CreateChannel(string address, X509Certificate2? clientCertificate = null)
+    public GrpcChannel CreateChannel(
+        string address,
+        X509Certificate2? clientCertificate = null,
+        bool trustRemoteServerCertificate = false,
+        bool ownsClientCertificate = false)
     {
         if (!_options.UseMtls)
         {
@@ -36,23 +55,40 @@ public sealed class ModuleGrpcChannelFactory : IModuleGrpcChannelFactory
             throw new InvalidOperationException("TLS material is not loaded. Call EnsureLoadedAsync first.");
         }
 
-        var handler = new HttpClientHandler
+        var sockets = new SocketsHttpHandler
         {
-            ServerCertificateCustomValidationCallback = (_, cert, _, _) =>
+            SslOptions = new SslClientAuthenticationOptions
             {
-                if (cert is null)
+                RemoteCertificateValidationCallback = (_, cert, _, _) =>
                 {
-                    return false;
-                }
+                    if (cert is null)
+                    {
+                        return false;
+                    }
 
-                using var presented = new X509Certificate2(cert);
-                return ValidateAgainstCa(presented);
+                    if (trustRemoteServerCertificate)
+                    {
+                        return true;
+                    }
+
+                    using var presented = new X509Certificate2(cert);
+                    return ValidateAgainstCa(presented);
+                },
             },
         };
 
         if (clientCertificate is not null)
         {
-            handler.ClientCertificates.Add(clientCertificate);
+            sockets.SslOptions.ClientCertificates = new X509CertificateCollection { clientCertificate };
+            sockets.SslOptions.LocalCertificateSelectionCallback =
+                (_, _, localCertificates, _, _) =>
+                    localCertificates.Count > 0 ? localCertificates[0]! : clientCertificate;
+        }
+
+        HttpMessageHandler handler = sockets;
+        if (ownsClientCertificate && clientCertificate is not null)
+        {
+            handler = new OwnedClientCertificateHandler(sockets, clientCertificate);
         }
 
         return GrpcChannel.ForAddress(address, new GrpcChannelOptions
@@ -68,5 +104,28 @@ public sealed class ModuleGrpcChannelFactory : IModuleGrpcChannelFactory
         chain.ChainPolicy.CustomTrustStore.Add(_store.CaCertificate);
         chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
         return chain.Build(certificate);
+    }
+
+    /// <summary>Disposes a short-lived client cert when the gRPC channel (and handler) is disposed.</summary>
+    private sealed class OwnedClientCertificateHandler : DelegatingHandler
+    {
+        private readonly X509Certificate2 _clientCertificate;
+
+        public OwnedClientCertificateHandler(HttpMessageHandler inner, X509Certificate2 clientCertificate)
+            : base(inner)
+        {
+            _clientCertificate = clientCertificate;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _clientCertificate.Dispose();
+                InnerHandler?.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
     }
 }

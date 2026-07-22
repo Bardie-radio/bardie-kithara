@@ -112,7 +112,7 @@ The join secret is only the bootstrap; it is not a standing impersonation key fo
 | **`kind` is an open string** | Mesh join stays reusable; product taxonomies live in the host |
 | **Well-known kinds may carry typed `oneof details`** | JWKS / search schema / client auth mode without parallel RPCs |
 | **Unknown kinds are registry-only (Phase 1)** | Still mTLS-paired; no Auth/Source catalog upsert |
-| **Capabilities advertised at Register** | Host routes only what the module claims (e.g. auth `seedAdmin`, source `pause`) |
+| Capabilities advertised at Register | Host routes only what the module claims (open strings; Bardie maps well-known values in the host — see [module-channel](../operations/module-channel.md)) |
 | **Static clients advertise a permission ceiling** | Managed users cannot be granted rights above what the module declared at handshake |
 | **Heartbeat is mTLS-only** | No join secret on the steady-state path |
 | **REST `/api` is for end users** | Client modules call REST to turn SPI into UX — not to join the mesh |
