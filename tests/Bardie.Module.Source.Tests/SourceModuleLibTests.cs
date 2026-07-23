@@ -33,7 +33,7 @@ public class SourceModuleLibTests
     }
 
     [Fact]
-    public async Task PauseTrack_with_capability_default_is_unimplemented()
+    public async Task PauseTrack_with_capability_without_registry_is_unimplemented()
     {
         var adapter = new StubSource(new ModuleManifest
         {
@@ -45,6 +45,33 @@ public class SourceModuleLibTests
         var ex = await Assert.ThrowsAsync<RpcException>(
             () => adapter.PauseTrack(new PauseTrackRequest { TrackJobId = "x" }, context: null!));
         Assert.Equal(StatusCode.Unimplemented, ex.StatusCode);
+    }
+
+    [Fact]
+    public async Task PauseResumeStop_use_registry_defaults()
+    {
+        var registry = new TrackJobRegistry(Options.Create(new SourceModuleOptions { MaxParallelJobs = 4 }));
+        var job = registry.Create("s1", "ref", "/tmp/a.pcm");
+        var adapter = new StubSource(
+            new ModuleManifest
+            {
+                Slug = "magpie",
+                Kind = "source",
+                Capabilities = ["play", "pause"],
+            },
+            registry);
+
+        var paused = await adapter.PauseTrack(new PauseTrackRequest { TrackJobId = job.TrackJobId }, null!);
+        Assert.True(paused.Ok);
+        Assert.Equal(TrackState.Paused, job.State);
+
+        var resumed = await adapter.ResumeTrack(new ResumeTrackRequest { TrackJobId = job.TrackJobId }, null!);
+        Assert.True(resumed.Ok);
+        Assert.Equal(TrackState.Running, job.State);
+
+        var stopped = await adapter.StopTrack(new StopTrackRequest { TrackJobId = job.TrackJobId }, null!);
+        Assert.True(stopped.Ok);
+        Assert.True(job.Cancellation.IsCancellationRequested);
     }
 
     [Fact]
@@ -95,12 +122,28 @@ public class SourceModuleLibTests
     [Fact]
     public void TrackJobRegistry_create_get_remove()
     {
-        var registry = new TrackJobRegistry();
+        var registry = new TrackJobRegistry(Options.Create(new SourceModuleOptions()));
         var job = registry.Create("struna-1", "ref", "/tmp/a.pcm");
         Assert.True(registry.TryGet(job.TrackJobId, out var found));
         Assert.Equal(job.TrackJobId, found!.TrackJobId);
         Assert.True(registry.TryRemove(job.TrackJobId, out _));
         Assert.False(registry.TryGet(job.TrackJobId, out _));
+    }
+
+    [Fact]
+    public void TrackJobRegistry_enforces_parallel_limit()
+    {
+        var registry = new TrackJobRegistry(Options.Create(new SourceModuleOptions { MaxParallelJobs = 1 }));
+        registry.Create("s1", "ref-a", "/tmp/a.pcm");
+        var ex = Assert.Throws<InvalidOperationException>(() => registry.Create("s1", "ref-b", "/tmp/b.pcm"));
+        Assert.Contains("limit", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ModuleBlobKeys_for_object()
+    {
+        Assert.Equal("tunes/magpie/abc", ModuleBlobKeys.ForObject("Magpie", "abc"));
+        Assert.Throws<ArgumentException>(() => ModuleBlobKeys.ForObject("magpie", "../x"));
     }
 
     [Fact]
@@ -124,10 +167,40 @@ public class SourceModuleLibTests
         }
     }
 
+    [Fact]
+    public async Task FifoAudioSink_honours_pause_predicate()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "bardie-fifo-pause-" + Guid.NewGuid().ToString("N") + ".pcm");
+        await File.WriteAllBytesAsync(path, []);
+        var paused = true;
+        var sink = new FifoAudioSink();
+        var payload = new byte[] { 9, 8, 7 };
+        await using var input = new MemoryStream(payload);
+
+        var write = sink.WriteAsync(path, input, CancellationToken.None, () => paused);
+        await Task.Delay(80);
+        Assert.False(write.IsCompleted);
+        paused = false;
+        await write;
+
+        Assert.Equal(payload, await File.ReadAllBytesAsync(path));
+        File.Delete(path);
+    }
+
+    [Fact]
+    public void MapStartFailure_maps_common_exceptions()
+    {
+        var exhausted = SourceModuleRpc.MapStartFailure(new InvalidOperationException("full"));
+        Assert.Equal(StatusCode.ResourceExhausted, exhausted.StatusCode);
+
+        var invalid = SourceModuleRpc.MapStartFailure(new ArgumentException("bad"));
+        Assert.Equal(StatusCode.InvalidArgument, invalid.StatusCode);
+    }
+
     private sealed class StubSource : SourceModuleBase
     {
-        public StubSource(ModuleManifest manifest)
-            : base(manifest)
+        public StubSource(ModuleManifest manifest, ITrackJobRegistry? jobs = null)
+            : base(manifest, jobs)
         {
         }
     }

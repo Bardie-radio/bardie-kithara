@@ -24,6 +24,7 @@ public static class SourceModuleServiceCollectionExtensions
         services.AddSingleton<IFifoAudioSink, FifoAudioSink>();
         services.AddSingleton<IModuleBlobStorageClient, ModuleBlobStorageClient>();
         services.AddSingleton<IModuleLibraryClient, ModuleLibraryClient>();
+        services.AddSingleton<ModuleTuneCache>();
         return services;
     }
 }

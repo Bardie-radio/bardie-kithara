@@ -11,16 +11,22 @@ Depends on [`Bardie.Contracts`](../Bardie.Contracts/README.md) + [`Bardie.Module
 ```csharp
 builder.Services.AddSourceModuleDefaults(builder.Configuration);
 // Prefer source.searchFields in module.manifest.json (optional SourceModule:SearchFields fallback)
+// SourceModule:MaxParallelJobs (default 4; ≤0 = unlimited)
 ```
 
 | Type | Role |
 |------|------|
-| `SourceModuleBase` | `Health`; default Pause/Resume gate on `pause` capability |
+| `SourceModuleBase` | `Health`; pause capability gate; default Stop / Pause / Resume / TrackStatus via registry |
 | `ModuleManifestSourceBag` | Parse opaque `source.searchFields` from the manifest |
 | `SourceSearchFieldsRegisterRequestCustomizer` | Attach `Source.search_fields` on Register (manifest → options → `title`) |
-| `ITrackJobRegistry` / `TrackJobRegistry` | Job id lifecycle for Stop / Pause / Resume / TrackStatus |
-| `IFifoAudioSink` / `FifoAudioSink` | Write PCM to Kithara session FIFO path |
+| `ITrackJobRegistry` / `TrackJobRegistry` | Job lifecycle, parallel limit, Stop / Pause / Resume |
+| `IFifoAudioSink` / `FifoAudioSink` | PCM → session FIFO (optional pause predicate) |
+| `ModuleBlobKeys` | `tunes/<slug>/…` key helper |
+| `ModuleTuneCache` | Exists → Get / download → Put + EnsureTune |
+| `SourceModuleRpc` / `TrackStatusStreaming` | RpcException map, broken-pipe, OTel tags, status poll |
 | `IModuleBlobStorageClient` / `IModuleLibraryClient` | Dial Kithara BlobStorage + Library over participant mTLS |
+
+FIFO / protocol smoke (`sine` proof track): separate package [`Bardie.Module.Source.Debug`](../Bardie.Module.Source.Debug/README.md) — reference from **Debug / test builds only**.
 
 YoutubeExplode, libav transcoder, URI-only play, and module-specific Search/StartTrack stay in the module.
 

@@ -13,8 +13,8 @@ public sealed class SourceSearchFieldOptions
 }
 
 /// <summary>
-/// Optional override for <see cref="SourceSearchFieldsRegisterRequestCustomizer"/>.
-/// Prefer <c>source.searchFields</c> in <c>module.manifest.json</c>; this section is a fallback.
+/// Shared source-module options. Prefer <c>source.searchFields</c> in <c>module.manifest.json</c>
+/// for search schema; <see cref="SearchFields"/> is a fallback.
 /// </summary>
 public sealed class SourceModuleOptions
 {
@@ -24,6 +24,12 @@ public sealed class SourceModuleOptions
     /// Fields advertised on Register when the manifest has none. When empty, defaults to mandatory <c>title</c>.
     /// </summary>
     public List<SourceSearchFieldOptions> SearchFields { get; set; } = [];
+
+    /// <summary>
+    /// Max concurrent track jobs in Running or Paused state.
+    /// Values ≤ 0 mean unlimited.
+    /// </summary>
+    public int MaxParallelJobs { get; set; } = 4;
 }
 
 /// <summary>Attaches <c>Source.search_fields</c> on Module Registry Register.</summary>

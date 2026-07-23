@@ -76,6 +76,7 @@ libs/
   Bardie.Module.Hosting/      # ASP.NET participant bootstrap + Bardie Compose env aliases
   Bardie.Module.Auth/         # JWT mint / JWKS Register helpers for auth adapters
   Bardie.Module.Source/       # SourceModule base, FIFO sink, job registry, host dial clients
+  Bardie.Module.Source.Debug/ # opt-in sine FIFO/protocol smoke (Debug / test refs only)
   Bardie.Orchestrator.Auth/
   Bardie.Orchestrator.Source/
 ```
