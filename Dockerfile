@@ -16,7 +16,7 @@ COPY kithara/src/Kithara kithara/src/Kithara/
 RUN dotnet restore kithara/src/Kithara/Kithara.csproj
 RUN dotnet publish kithara/src/Kithara/Kithara.csproj -c Release -o /app/publish --no-restore
 
-# Encoder integration tests need FFmpeg.AutoGen 7.1.x sonames (libavcodec.so.61) — same as Magpie.
+# Encoder integration tests need FFmpeg.AutoGen 6.1.x sonames (libavcodec.so.60) — Ubuntu aspnet ffmpeg.
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS test
 WORKDIR /src
 RUN apt-get update \
@@ -35,7 +35,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
 # curl for healthcheck; ffmpeg shared libs for FFmpeg.AutoGen Neck encoder (in-process, not CLI).
-# Sonames must match FFmpeg.AutoGen 7.1.x — same constraint as Magpie.
+# Sonames must match FFmpeg.AutoGen 6.1.x (Ubuntu 24.04 / aspnet:10.0 ships ffmpeg 6.1 → libavcodec.so.60).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl ffmpeg \
     && rm -rf /var/lib/apt/lists/* \

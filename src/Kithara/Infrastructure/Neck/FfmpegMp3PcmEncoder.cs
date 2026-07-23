@@ -63,7 +63,22 @@ public sealed class FfmpegMp3PcmEncoder : IAsyncDisposable
                 logger.LogInformation("FFmpeg.AutoGen RootPath={Root}", root);
             }
 
-            ffmpeg.av_log_set_level(ffmpeg.AV_LOG_ERROR);
+            // Surface missing sonames instead of opaque NotSupportedException stubs.
+            DynamicallyLoadedBindings.ThrowErrorIfFunctionNotFound = true;
+            DynamicallyLoadedBindings.Initialize();
+
+            try
+            {
+                ffmpeg.av_log_set_level(ffmpeg.AV_LOG_ERROR);
+                logger.LogInformation("FFmpeg native ready: {Version}", ffmpeg.av_version_info());
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    "FFmpeg.AutoGen failed after Initialize — need FFmpeg 6.1 shared libs (libavcodec.so.60). Check BARDIE_FFMPEG_ROOT.",
+                    ex);
+            }
+
             _nativeInitialized = true;
         }
     }

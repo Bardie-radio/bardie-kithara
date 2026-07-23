@@ -2,9 +2,9 @@
 
 Living audit of trust assumptions across the Module mesh, auth vertical, library/storage, and guest paths. Not a full product pen-test — focused on **who can become trusted**, **who gets admin**, and **what tokens/keys actually do**.
 
-**Last review:** Phases 1–3 completion (Jul 2026). **Active remediations: Phases 4–6** (parallel). Revisit when Channel peer pinning, guest refresh, and Bes roles land.
+**Last review:** MVP backend Phases 4–6 (Jul 2026) on `feat/mvp-skeleton`. Prior index: Phases 1–3 findings below.
 
-**Remediation map:** fixes are owned by [implementation-plan](implementation-plan.md) Phases **4–6** (parallel) and **8** (verify). Mesh residual `MESH-REG-*` stays ops + product backlog (not Phase 1-complete).
+**Remediation status:** Phase 4–6 product remediations are **largely fixed** in code (see [status table](#remediation-status-phases-4–6)). Soft residuals: SEC-03 host API gate, SEC-05 lockout. Phase 8 owns QA/DOC. `MESH-REG-*` stays ops + backlog.
 
 ---
 
@@ -33,21 +33,48 @@ Living audit of trust assumptions across the Module mesh, auth vertical, library
 
 ## Finding index (Phases 1–3 review)
 
-| ID | Sev | Area | Summary | Fix phase |
-|----|-----|------|---------|-----------|
-| [SEC-01](#sec-01--guest-refresh-tokens-are-dead-on-arrival) | **P0** | Guests | Guest refresh minted but `/api/auth/refresh` only dials auth modules | **6** |
-| [SEC-02](#sec-02--ensuretune-skips-storage_key-ownership) | **P0** | Library | `EnsureTune` does not call `BlobKeyLayout.EnsureKeyOwnedBy` | **6** |
-| [SEC-03](#sec-03--must_rotate_credentials-is-advisory-forever) | **P0** | Bes | Seed sets rotate flag; Authenticate never enforces / no password-change | **6** |
-| [SEC-07](#sec-07--every-successful-login-mints-rolesadmin) | **P0** | Bes / AuthZ | Every mint hardcodes `roles=[admin]` | **6** |
-| [SEC-04](#sec-04--jwks-resolver-uses-sync-over-async) | **P1** | Auth JWT | `GetAwaiter().GetResult()` in signing-key resolver | **6** |
-| [SEC-05](#sec-05--guest-exchange-unauthenticated--no-rate-limit) | **P1** | Guests | Open `POST …/guest/exchange`; short codes brute-forceable | **6** |
-| [SEC-06](#sec-06--work-port-mtls-trusts-ca-only--not-hostslug-pinned) | **P1** | Module.Channel | Work-port accepts any mesh-CA client cert; host dials skip server pin | **4** |
-| [MESH-REG-001](#mesh-reg-001--slug-takeover-via-join-secret-auto) | High* | Registry | Join secret + Register window → slug takeover (auto) | Ops + backlog |
-| MESH-REG-002 | Residual | Registry | Auto private-key-on-wire | Ops (`preshared`) |
-| MESH-REG-003 | Residual | Registry | Cert CN = slug, not instance | Tied to MESH-REG-001 |
-| MESH-REG-004 | Residual | Registry | Ephemeral TLS data dir → re-key storm | Ops (durable volume) |
+| ID | Sev | Area | Summary | Fix phase | Status (Jul 2026) |
+|----|-----|------|---------|-----------|-------------------|
+| [SEC-01](#sec-01--guest-refresh-tokens-are-dead-on-arrival) | **P0** | Guests | Guest refresh minted but `/api/auth/refresh` only dials auth modules | **6** | **Fixed** |
+| [SEC-02](#sec-02--ensuretune-skips-storage_key-ownership) | **P0** | Library | `EnsureTune` does not call `BlobKeyLayout.EnsureKeyOwnedBy` | **6** | **Fixed** |
+| [SEC-03](#sec-03--must_rotate_credentials-is-advisory-forever) | **P0** | Bes | Seed sets rotate flag; Authenticate never enforces / no password-change | **6** | **Partial** — Bes mint + `new_password`; host does not deny control |
+| [SEC-07](#sec-07--every-successful-login-mints-rolesadmin) | **P0** | Bes / AuthZ | Every mint hardcodes `roles=[admin]` | **6** | **Fixed** |
+| [SEC-04](#sec-04--jwks-resolver-uses-sync-over-async) | **P1** | Auth JWT | `GetAwaiter().GetResult()` in signing-key resolver | **6** | **Fixed** |
+| [SEC-05](#sec-05--guest-exchange-unauthenticated--no-rate-limit) | **P1** | Guests | Open `POST …/guest/exchange`; short codes brute-forceable | **6** | **Partial** — 10/min rate limit; no failure lockout |
+| [SEC-06](#sec-06--work-port-mtls-trusts-ca-only--not-hostslug-pinned) | **P1** | Module.Channel | Work-port accepts any mesh-CA client cert; host dials skip server pin | **4** | **Fixed** |
+| [MESH-REG-001](#mesh-reg-001--slug-takeover-via-join-secret-auto) | High* | Registry | Join secret + Register window → slug takeover (auto) | Ops + backlog | **Open** |
+| MESH-REG-002 | Residual | Registry | Auto private-key-on-wire | Ops (`preshared`) | **Open** |
+| MESH-REG-003 | Residual | Registry | Cert CN = slug, not instance | Tied to MESH-REG-001 | **Open** |
+| MESH-REG-004 | Residual | Registry | Ephemeral TLS data dir → re-key storm | Ops (durable volume) | **Open** |
 
 \*High when join secrets leak or `:5000` is reachable beyond a private overlay; expected residual for auto on a closed Compose network.
+
+---
+
+## Remediation status (Phases 4–6)
+
+| ID | Code evidence | Remaining |
+|----|---------------|-----------|
+| **SEC-01** | `GuestJwtService.TryRefreshAsync`; `POST /api/auth/refresh` short-circuits `kithara.guest` | — |
+| **SEC-02** | `LibraryService.EnsureTune` → `BlobKeyLayout.EnsureKeyOwnedBy` | — |
+| **SEC-03** | Bes binding `MustRotate` + Authenticate `new_password` clears flag | Host/API gate when rotate required; advertise `new_password` on GetProviders form |
+| **SEC-07** | Roles from binding; SeedAdmin = admin once; default `user` | — |
+| **SEC-04** | JWKS snapshot + hosted refresh; resolver reads cache only | Cold window until first refresh |
+| **SEC-05** | `guest-exchange` fixed window 10/min per IP+Struna | Failure lockout |
+| **SEC-06** | `CertificateIdentity.IsHostClient` inbound; `expectedServerIdentity` outbound | — |
+| **DES-01** | Auth orch discovery `provider_id → module` map | — |
+
+### New findings (Phases 4–6 audit)
+
+| ID | Sev | Summary | Owner |
+|----|-----|---------|-------|
+| **NEW-01** | P1 | `must_rotate` still advisory at Kithara control edge (extends SEC-03) | Phase 8 / auth follow-up |
+| **NEW-02** | P2 | TrackStatus disconnect without terminal event can orphan Neck jobs | Phase 8 / Neck polish |
+| **NEW-03** | P2 | Guest rate-limit without failure lockout (extends SEC-05) | Phase 8 |
+| **NEW-04** | P2 | Listen-token compare not constant-time | Phase 8 |
+| **NEW-05** | P2 | JWKS snapshot cold window at boot | Phase 8 |
+| **QA-01** | P1 | No host E2E; Bes/Magpie have no module-local tests | Phase 8 ([kithara#22](https://github.com/Bardie-radio/kithara/issues/22), bes#6, magpie#2) |
+| **DOC-01** | P3 | Plan/module docs lag code | Phase 8 ([kithara#23](https://github.com/Bardie-radio/kithara/issues/23), bes#7, magpie#3) |
 
 ---
 
@@ -215,9 +242,12 @@ Join secret is the **bootstrap** credential before mTLS exists. Auto deliberatel
 - [ ] `TlsDataPath` mounted on durable storage in any long-lived deploy
 - [ ] Bootstrap mode = `preshared` whenever the channel leaves a trusted private network
 - [ ] Document who can read Compose/secret store (same trust as join secrets)
-- [ ] After Phase 6: guest refresh works or is not minted; guest exchange rate-limited
-- [ ] After Phase 6: Bes roles from binding; `must_rotate` enforced
-- [ ] After Phase 4: Channel host↔slug pin verified on work dials
+- [x] Guest refresh works for `kithara.guest` (SEC-01)
+- [x] Guest exchange rate-limited (SEC-05 — lockout still optional)
+- [x] Bes roles from binding; SeedAdmin is first admin only (SEC-07)
+- [~] `must_rotate` returned and clearable via `new_password` — host control gate still open (SEC-03 / NEW-01)
+- [x] Channel host↔slug pin on work dials (SEC-06)
+- [ ] Phase 8: host E2E + module tests + doc sweep
 
 ---
 

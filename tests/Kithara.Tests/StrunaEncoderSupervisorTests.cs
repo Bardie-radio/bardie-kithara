@@ -17,7 +17,7 @@ public class StrunaEncoderSupervisorTests
             throw SkipException.ForSkip("Struna encoder FIFO integration requires a Unix host.");
         }
 
-        // Magpie-style: BARDIE_FFMPEG_ROOT / Debian paths. Optional local BtbN extract for host FFmpeg≠7.1.
+        // Magpie-style: BARDIE_FFMPEG_ROOT / Debian paths (FFmpeg.AutoGen 6.1 → libavcodec.so.60).
         var ffmpegRoot = Environment.GetEnvironmentVariable("BARDIE_FFMPEG_ROOT");
         if (string.IsNullOrWhiteSpace(ffmpegRoot))
         {
@@ -27,7 +27,7 @@ public class StrunaEncoderSupervisorTests
                          "/usr/lib/aarch64-linux-gnu",
                      })
             {
-                if (File.Exists(Path.Combine(dir, "libavcodec.so.61")))
+                if (File.Exists(Path.Combine(dir, "libavcodec.so.60")))
                 {
                     ffmpegRoot = dir;
                     break;
@@ -45,10 +45,10 @@ public class StrunaEncoderSupervisorTests
         }
 
         if (string.IsNullOrWhiteSpace(ffmpegRoot)
-            || !File.Exists(Path.Combine(ffmpegRoot, "libavcodec.so.61")))
+            || !File.Exists(Path.Combine(ffmpegRoot, "libavcodec.so.60")))
         {
             throw SkipException.ForSkip(
-                "Need libavcodec.so.61 (FFmpeg.AutoGen 7.1.x). Set BARDIE_FFMPEG_ROOT or use Docker test stage.");
+                "Need libavcodec.so.60 (FFmpeg.AutoGen 6.1.x). Set BARDIE_FFMPEG_ROOT or use Docker test stage.");
         }
 
         var root = Path.Combine(Path.GetTempPath(), "kithara-encode-" + Guid.NewGuid().ToString("N"));
@@ -111,8 +111,15 @@ public class StrunaEncoderSupervisorTests
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null)
         {
-            var candidate = Path.Combine(dir.FullName, "artifacts", "ffmpeg-n7.1-linux64-gpl-shared", "lib");
-            if (File.Exists(Path.Combine(candidate, "libavcodec.so.61")))
+            var candidate = Path.Combine(dir.FullName, "artifacts", "ffmpeg-n6.1-linux64-gpl-shared", "lib");
+            if (File.Exists(Path.Combine(candidate, "libavcodec.so.60")))
+            {
+                return candidate;
+            }
+
+            // Legacy extract name from earlier AutoGen 7.1 attempts.
+            candidate = Path.Combine(dir.FullName, "artifacts", "ffmpeg-n7.1-linux64-gpl-shared", "lib");
+            if (File.Exists(Path.Combine(candidate, "libavcodec.so.60")))
             {
                 return candidate;
             }
