@@ -8,6 +8,7 @@ using Kithara.Infrastructure.Neck;
 using Kithara.Infrastructure.Persistence;
 using Kithara.Infrastructure.Persistence.Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Kithara.Features.Streams;
@@ -23,8 +24,9 @@ public static class StrunaEndpoints
     {
         var root = endpoints.MapGroup("/api/streams");
 
-        // Bootstrap is unauthenticated (guest code only); rate-limit later.
-        root.MapPost("/{id:guid}/guest/exchange", GuestExchangeAsync);
+        // Bootstrap is unauthenticated (guest code only); SEC-05 rate-limits per IP + Struna.
+        root.MapPost("/{id:guid}/guest/exchange", GuestExchangeAsync)
+            .RequireRateLimiting("guest-exchange");
 
         var group = root.MapGroup(string.Empty)
             .RequireAuthorization()
@@ -186,7 +188,6 @@ public static class StrunaEndpoints
     }
 
     private static async Task<IResult> PauseAsync(Guid id, Neck neck, CancellationToken ct) =>
-        // Source PauseTrack now; Neck silence feeder is Phase 4.
         MapPlayResult(await neck.PauseTrackAsync(id, ct).ConfigureAwait(false));
 
     private static async Task<IResult> SkipAsync(Guid id, Neck neck, CancellationToken ct) =>
@@ -203,9 +204,13 @@ public static class StrunaEndpoints
         return Results.Ok(new
         {
             playing = true,
+            paused = now.Paused,
             module = now.ModuleSlug,
             track_ref = now.TrackRef,
             track_job_id = now.TrackJobId,
+            title = now.Title,
+            artist = now.Artist,
+            stream_title = now.StreamTitle,
         });
     }
 
