@@ -41,6 +41,28 @@ Token generated at creation (**Kithara-owned** Struna secret); owner can rotate.
 | **protected** | Short **guest code** → Kithara creates an **ephemeral guest user** + mints JWTs for that user |
 | **public** | **Not supported** |
 
+### REST discovery lists
+
+| Path | Filter |
+|------|--------|
+| `GET /api/streams/listen` | Principal may listen (public for all; protected/private → owner **or** grant) |
+| `GET /api/streams/control` | Principal may DJ (owner **or** grant **or** protected-control ephemeral guest for that Struna) |
+
+Today’s ACL is owner + grant (+ guest for protected control). **Phase 6 contract:** owner-only grant CRUD under `/api/streams/{id}/grants` and managed-user **permission ceiling** enforcement on create / grant mutations — see [auth](../interfaces/auth.md) and [rest-api](../interfaces/rest-api.md). Listen-token holders are gated on `/stream/{slug}` (Phase 5), not via these lists.
+
+### Grant CRUD (Phase 6)
+
+Owner of the Struna only. Persist `StrunaControlGrant`.
+
+| Method | Path | Body / notes |
+|--------|------|--------------|
+| GET | `/api/streams/{id}/grants` | List grantees |
+| POST | `/api/streams/{id}/grants` | `{ "user_id": "…" }` — durable/managed user |
+| DELETE | `/api/streams/{id}/grants/{userId}` | Revoke |
+
+### Managed permission ceiling (Phase 6)
+
+Static clients advertise a ceiling at Register; Kithara stores it on the managed user/binding. Create-struna and grant mutations for managed principals **deny** anything above that ceiling. User-aware clients (Plume) are not constrained by a static-module ceiling.
 ### Protected control: guest code → ephemeral guest user
 
 Do **not** send the short guest code on every API call — it is brute-forceable and sticky in logs/history.

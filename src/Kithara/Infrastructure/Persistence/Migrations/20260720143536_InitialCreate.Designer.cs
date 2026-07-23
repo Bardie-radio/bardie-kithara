@@ -23,17 +23,13 @@ namespace Kithara.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Kithara.Infrastructure.Persistence.Entities.QueueEntry", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .ValueGeneratedOnAdd();
 
-                    b.Property<int>("Position")
-                        .HasColumnType("INTEGER");
+                    b.Property<int>("Position");
 
-                    b.Property<Guid>("StrunaId")
-                        .HasColumnType("TEXT");
+                    b.Property<Guid>("StrunaId");
 
-                    b.Property<Guid>("TuneId")
-                        .HasColumnType("TEXT");
+                    b.Property<Guid>("TuneId");
 
                     b.HasKey("Id");
 
@@ -48,31 +44,24 @@ namespace Kithara.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Kithara.Infrastructure.Persistence.Entities.SearchResultCacheEntry", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .ValueGeneratedOnAdd();
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("TEXT");
+                    b.Property<DateTimeOffset>("CreatedAt");
 
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("TEXT");
+                    b.Property<DateTimeOffset>("ExpiresAt");
 
                     b.Property<string>("ModuleSlug")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(64);
 
-                    b.Property<Guid>("PrincipalUserId")
-                        .HasColumnType("TEXT");
+                    b.Property<Guid>("PrincipalUserId");
 
                     b.Property<string>("QueryKey")
                         .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(512);
 
                     b.Property<string>("ResultsJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                        .IsRequired();
 
                     b.HasKey("Id");
 
@@ -84,38 +73,29 @@ namespace Kithara.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Kithara.Infrastructure.Persistence.Entities.Struna", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .ValueGeneratedOnAdd();
 
-                    b.Property<int>("ControlAccess")
-                        .HasColumnType("INTEGER");
+                    b.Property<int>("ControlAccess");
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("TEXT");
+                    b.Property<DateTimeOffset>("CreatedAt");
 
                     b.Property<string>("GuestCode")
-                        .HasMaxLength(32)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(32);
 
                     b.Property<string>("ListenToken")
-                        .HasMaxLength(128)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(128);
 
-                    b.Property<Guid>("OwnerUserId")
-                        .HasColumnType("TEXT");
+                    b.Property<Guid>("OwnerUserId");
 
-                    b.Property<int>("PlaybackAccess")
-                        .HasColumnType("INTEGER");
+                    b.Property<int>("PlaybackAccess");
 
                     b.Property<string>("Slug")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(64);
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(256);
 
                     b.HasKey("Id");
 
@@ -129,11 +109,9 @@ namespace Kithara.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Kithara.Infrastructure.Persistence.Entities.StrunaControlGrant", b =>
                 {
-                    b.Property<Guid>("StrunaId")
-                        .HasColumnType("TEXT");
+                    b.Property<Guid>("StrunaId");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("TEXT");
+                    b.Property<Guid>("UserId");
 
                     b.HasKey("StrunaId", "UserId");
 
@@ -145,50 +123,38 @@ namespace Kithara.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Kithara.Infrastructure.Persistence.Entities.Tune", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .ValueGeneratedOnAdd();
 
                     b.Property<string>("Artist")
-                        .HasMaxLength(512)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(512);
 
                     b.Property<string>("ArtworkUrl")
-                        .HasMaxLength(1024)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(1024);
 
                     b.Property<string>("ContentType")
-                        .HasMaxLength(128)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(128);
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("TEXT");
+                    b.Property<DateTimeOffset>("CreatedAt");
 
-                    b.Property<Guid?>("CreatedByUserId")
-                        .HasColumnType("TEXT");
+                    b.Property<Guid?>("CreatedByUserId");
 
-                    b.Property<double?>("DurationSeconds")
-                        .HasColumnType("REAL");
+                    b.Property<double?>("DurationSeconds");
 
                     b.Property<string>("ExternalId")
                         .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(512);
 
                     b.Property<string>("ModuleSlug")
                         .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(64);
 
-                    b.Property<long?>("SizeBytes")
-                        .HasColumnType("INTEGER");
+                    b.Property<long?>("SizeBytes");
 
                     b.Property<string>("StorageKey")
-                        .HasMaxLength(512)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(512);
 
                     b.Property<string>("Title")
-                        .HasMaxLength(512)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(512);
 
                     b.HasKey("Id");
 
@@ -203,26 +169,20 @@ namespace Kithara.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Kithara.Infrastructure.Persistence.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .ValueGeneratedOnAdd();
 
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("TEXT");
+                    b.Property<DateTimeOffset>("CreatedAt");
 
-                    b.Property<Guid?>("GuestStrunaId")
-                        .HasColumnType("TEXT");
+                    b.Property<Guid?>("GuestStrunaId");
 
-                    b.Property<int>("Kind")
-                        .HasColumnType("INTEGER");
+                    b.Property<int>("Kind");
 
                     b.Property<string>("ManagedByModuleSlug")
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(64);
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(32);
 
                     b.HasKey("Id");
 
@@ -233,20 +193,16 @@ namespace Kithara.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Kithara.Infrastructure.Persistence.Entities.UserAuthBinding", b =>
                 {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("TEXT");
+                    b.Property<Guid>("UserId");
 
                     b.Property<string>("ProviderSlug")
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(64);
 
                     b.Property<string>("ExternalSubject")
-                        .HasMaxLength(256)
-                        .HasColumnType("TEXT");
+                        .HasMaxLength(256);
 
                     b.Property<string>("PayloadJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                        .IsRequired();
 
                     b.HasKey("UserId", "ProviderSlug");
 

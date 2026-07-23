@@ -113,6 +113,7 @@ public static class AuthAuthenticationServiceCollectionExtensions
         });
 
         services.AddSingleton<GuestJwtSigningKeyStore>();
+        services.AddSingleton<GuestJwtService>();
         services.AddSingleton<AuthModuleJwksKeyProvider>();
         services.AddMemoryCache();
         services.AddHttpClient(nameof(AuthModuleJwksKeyProvider));
@@ -153,16 +154,16 @@ public static class AuthAuthenticationServiceCollectionExtensions
             });
 
         services.AddOptions<JwtBearerOptions>(LoginBearerScheme)
-            .Configure<AuthModuleJwksKeyProvider>((options, keyProvider) =>
+            .Configure<AuthModuleJwksKeyProvider, GuestJwtSigningKeyStore>((options, keyProvider, guestKeys) =>
             {
                 options.TokenValidationParameters.IssuerSigningKeyResolver =
                     (_, _, _, _) =>
                     {
-                        // Sync wait — JwtBearer key resolver is sync; keys are cached.
-                        return keyProvider.GetAllSigningKeysAsync(CancellationToken.None)
+                        var moduleKeys = keyProvider.GetAllSigningKeysAsync(CancellationToken.None)
                             .ConfigureAwait(false)
                             .GetAwaiter()
                             .GetResult();
+                        return moduleKeys.Append(guestKeys.GetSigningKey());
                     };
             });
 

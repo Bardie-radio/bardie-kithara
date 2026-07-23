@@ -38,7 +38,7 @@ Flags the module advertises at registration so Kithara and clients know which RP
 
 Modules **without** `pause` (Starling) only support a full **stop** of the track job — there is no mid-job freeze. That is the main behavioral difference for an external/live stream source versus Magpie or Catbird: the input is continuous.
 
-Exact capability strings stay sketch-level in the [gRPC contract](../interfaces/grpc-source-module.md); the invariant is advertise what you can do, don’t invent source-type labels.
+Exact capability strings live in the [gRPC contract](../interfaces/grpc-source-module.md) (**v0.1 draft**); the invariant is advertise what you can do, don’t invent source-type labels.
 
 ## Modules
 
@@ -52,14 +52,18 @@ Image/Compose: `magpie`, `starling`, `catbird`. OTel: `bardie.source.<slug>`.
 
 ## Search
 
-Kithara exposes two client-facing search modes on **global** REST paths (`/api/search…`); both map to the module `Search` RPC when the source advertises `search`. Results are cached per **principal** (durable / managed / ephemeral guest) — guests cleared on Struna teardown; others until next search or configurable timeout — see [rest-api](../interfaces/rest-api.md).
+Kithara exposes two client-facing search modes on **global** REST paths (`/api/search…`); both map to the module `Search` RPC when the source advertises `search`. Results land in a principal-scoped **search cache** (opaque ids for `play` / `queue`) — **not** search/listen history. Guests’ cache is cleared on Struna teardown; durable principals replace on next search or TTL — see [rest-api](../interfaces/rest-api.md).
 
 | Client mode | REST (sketch) | What the module sees |
 |-------------|----------------|----------------------|
-| **Quicksearch** | `GET /api/search/quick?q=…` (+ optional `module`) | Plain-text / **title-only** query; fan-out if `module` omitted |
+| **Quicksearch** | `GET /api/search/quick?q=…` (alias `query`) (+ optional `module`) | Plain-text / **title-only** query; fan-out if `module` omitted |
 | **Regular search** | `POST /api/search` | Structured fields from the module’s advertised schema (always includes `title`) |
 
 Omit module slug to fan out across registered sources that advertise `search`. Queue / play always store the winning **module slug + track ref**.
+
+### Track bytes on play
+
+On `StartTrack`, the **source module** decides cache hit vs download (e.g. Magpie: blob already under `tunes/magpie/…` → play from storage; else download then play). Kithara does not download — it only dials the module with track ref + session FIFO endpoint.
 
 ### Regular search fields
 

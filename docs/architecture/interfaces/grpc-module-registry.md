@@ -101,7 +101,7 @@ Per-call dials keep operations atomic: one RPC = one span, one auth decision, ea
    - **`preshared`**: operator pre-places CA + module client cert/key offline; response PEM key fields stay **empty**; clients must not require them.
 3. After pairing, the **whole gRPC surface** (both directions) uses **mTLS**. `Heartbeat` renews liveness (and may later rotate certs); it does **not** carry the join secret.
 
-The join secret is only the bootstrap; it is not a standing impersonation key for work RPCs once mTLS is up. **Caveat:** anyone who holds the join secret can still call `Register` again whenever the registry accepts that slug (restart, TTL gap, cold start) and, in **auto**, receive a new client key — see [security-audit-module-mesh](../operations/security-audit-module-mesh.md) (`MESH-REG-001`).
+The join secret is only the bootstrap; it is not a standing impersonation key for work RPCs once mTLS is up. **Caveat:** anyone who holds the join secret can still call `Register` again whenever the registry accepts that slug (restart, TTL gap, cold start) and, in **auto**, receive a new client key — see [security-audit](../mvp/security-audit.md) (`MESH-REG-001`).
 
 ## Rules
 
@@ -127,6 +127,6 @@ Same `Register` as everyone else: join secret + `kind=client` + optional `Client
 
 Each work RPC is its own client call from Kithara → module: propagate W3C `traceparent`, record module slug + RPC name. Module OTel names stay `bardie.source.*` / `bardie.auth.*` / `bardie.plume` (etc.).
 
-**Related:** [grpc-source-module](grpc-source-module.md) · [grpc-auth-adapter](grpc-auth-adapter.md) · [clients](../domains/clients.md) · [module-channel](../operations/module-channel.md) · [ADR 003](../adrs/003-grpc-control-plane.md) · [security-audit-module-mesh](../operations/security-audit-module-mesh.md)
+**Related:** [grpc-source-module](grpc-source-module.md) · [grpc-auth-adapter](grpc-auth-adapter.md) · [clients](../domains/clients.md) · [module-channel](../operations/module-channel.md) · [ADR 003](../adrs/003-grpc-control-plane.md) · [security-audit](../mvp/security-audit.md)
 
 **Read next:** [grpc-source-module.md](grpc-source-module.md)

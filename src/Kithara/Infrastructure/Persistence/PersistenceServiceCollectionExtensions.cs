@@ -1,5 +1,5 @@
-using Bardie.Auth.Orchestrator.Ports;
-using Bardie.Source.Orchestrator.Ports;
+using Bardie.Orchestrator.Auth.Ports;
+using Bardie.Orchestrator.Source.Ports;
 using Kithara.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,7 +7,8 @@ namespace Kithara.Infrastructure.Persistence;
 
 public static class PersistenceServiceCollectionExtensions
 {
-    public static IServiceCollection AddKitharaPersistence(
+    /// <summary>Registers EF <see cref="KitharaDbContext"/> and auth persistence ports.</summary>
+    public static IServiceCollection AddKitharaDb(
         this IServiceCollection services,
         IConfiguration configuration)
     {
@@ -31,8 +32,49 @@ public static class PersistenceServiceCollectionExtensions
         });
 
         services.AddSingleton<IAuthPersistence, EfAuthPersistence>();
-        services.AddSingleton<IBlobStorage, StubBlobStorage>();
+        return services;
+    }
 
+    /// <summary>
+    /// Binds options, selects the blob driver from config, and registers the BlobStorage gRPC façade.
+    /// </summary>
+    public static IServiceCollection AddKitharaBlobStorage(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<BlobStorageOptions>(options =>
+        {
+            configuration.GetSection(BlobStorageOptions.SectionName).Bind(options);
+            var path = configuration["BARDIE_STORAGE_PATH"];
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                options.Path = path.Trim();
+            }
+
+            var driverOverride = configuration["BARDIE_STORAGE_DRIVER"];
+            if (!string.IsNullOrWhiteSpace(driverOverride))
+            {
+                options.Driver = driverOverride.Trim();
+            }
+        });
+
+        var driver = (configuration["BARDIE_STORAGE_DRIVER"]
+                ?? configuration[$"{BlobStorageOptions.SectionName}:Driver"]
+                ?? "local")
+            .Trim()
+            .ToLowerInvariant();
+
+        switch (driver)
+        {
+            case "local":
+                services.AddSingleton<IBlobStorage, LocalBlobStorage>();
+                break;
+            default:
+                throw new InvalidOperationException(
+                    $"Unsupported BlobStorage:Driver '{driver}'. Phase 3 supports 'local' only.");
+        }
+
+        services.AddSingleton<BlobStorageService>();
         return services;
     }
 

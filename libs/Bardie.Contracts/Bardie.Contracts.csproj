@@ -6,7 +6,7 @@
     <IsPackable>true</IsPackable>
     <PackageId>Bardie.Contracts</PackageId>
     <Version>0.1.0</Version>
-    <Description>Versioned gRPC contract package for Bardie module authors (ModuleRegistry, AuthAdapter).</Description>
+    <Description>Versioned gRPC contract package for Bardie module authors (ModuleRegistry, AuthAdapter, SourceModule, BlobStorage, Library).</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
@@ -23,6 +23,9 @@
   <ItemGroup>
     <Protobuf Include="Protos\module_registry.proto" GrpcServices="Both" />
     <Protobuf Include="Protos\auth_adapter.proto" GrpcServices="Both" />
+    <Protobuf Include="Protos\source_module.proto" GrpcServices="Both" />
+    <Protobuf Include="Protos\blob_storage.proto" GrpcServices="Both" />
+    <Protobuf Include="Protos\library.proto" GrpcServices="Both" />
   </ItemGroup>
 
   <ItemGroup>

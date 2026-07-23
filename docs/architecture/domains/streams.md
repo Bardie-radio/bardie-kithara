@@ -17,9 +17,16 @@ A **Struna** (stream) is a named broadcast channel managed by **Neck** inside Ki
 | `Slug` | User-chosen URL name — `/stream/{slug}`, `/player/{slug}` |
 | `Title` | Display name |
 
-**Slug rules:** lowercase alphanumeric + hyphens; unique among **alive** Strunas; reserved names blocked (`api`, `stream`, `admin`, `player`, … — see [configuration](../operations/configuration.md)); HTTP 409 on conflict.
+**Slug rules:** lowercase alphanumeric + hyphens; unique among **alive** Strunas; HTTP 409 on conflict. Listen URLs live under `/stream/{slug}` — that path prefix already isolates them from `/api/…` and `/player/…`, so we do **not** maintain a reserved-name denylist for route collisions (a Struna may be named `api` or `player`).
 
-**Alive from create:** `POST /api/streams` reserves the slug and starts FFmpeg + session FIFO (silence until the first track). **DELETE** (or silent **cleanup**) tears down the encoder and **frees the slug** — there is no separate stop endpoint.
+**Alive from create (two layers):**
+
+| Layer | When | Means |
+|-------|------|--------|
+| **Control-alive** | Now (Phase 3+) | Slug reserved, session FIFO created, guest code (+ listen token when playback is protected). Play/queue/skip work against source modules writing PCM into the FIFO |
+| **Encode-alive** | Phase 4 | Silence feeder + FFmpeg supervisor reading that FIFO for continuous encoded output |
+
+Until Phase 4, create is control-alive only — there is no encoder yet, so listeners cannot hear `/stream/{slug}`. **DELETE** (or silent **cleanup**) stops the track job, closes the FIFO, destroys guests, and **frees the slug** — there is no separate stop endpoint.
 
 ## Neck service responsibilities
 

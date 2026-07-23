@@ -1,10 +1,14 @@
-using Bardie.Auth.Orchestrator;
-using Bardie.ModuleChannel;
-using Bardie.ModuleChannel.Certificates;
-using Bardie.ModuleChannel.Hosting;
-using Bardie.Source.Orchestrator;
+using Bardie.Orchestrator.Auth;
+using Bardie.Module.Channel;
+using Bardie.Module.Channel.Certificates;
+using Bardie.Module.Channel.Hosting;
+using Bardie.Orchestrator.Source;
 using Kithara.Features.Auth;
+using Kithara.Features.Library;
 using Kithara.Features.Modules;
+using Kithara.Features.Search;
+using Kithara.Features.Streams;
+using Kithara.Infrastructure.Neck;
 using Kithara.Infrastructure.Observability;
 using Kithara.Infrastructure.Persistence;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -23,7 +27,11 @@ builder.Services.AddModuleChannel(builder.Configuration);
 builder.Services.AddAuthModuleOrchestrator(registerModuleChannel: false);
 builder.Services.AddSourceModuleOrchestrator(registerModuleChannel: false);
 
-builder.Services.AddKitharaPersistence(builder.Configuration);
+builder.Services.AddKitharaDb(builder.Configuration);
+builder.Services.AddKitharaBlobStorage(builder.Configuration);
+builder.Services.AddKitharaLibrary();
+builder.Services.AddKitharaNeck(builder.Configuration);
+builder.Services.AddKitharaSearch(builder.Configuration);
 builder.Services.AddModuleRegistry(builder.Configuration);
 builder.Services.AddKitharaAuthAuthentication(builder.Configuration);
 builder.Services.AddHostedService<SeedAdminBootstrapHostedService>();
@@ -38,7 +46,7 @@ var app = builder.Build();
 var certificateStore = app.Services.GetRequiredService<IModuleCertificateStore>();
 await certificateStore.EnsureLoadedAsync().ConfigureAwait(false);
 
-// Ensure guest signing key material exists at boot (mint unused until Phase 6).
+// Ensure guest signing key material exists at boot (used by POST …/guest/exchange).
 _ = app.Services.GetRequiredService<GuestJwtSigningKeyStore>().GetSigningKey();
 
 await app.MigrateKitharaDatabaseAsync().ConfigureAwait(false);
@@ -48,6 +56,8 @@ app.UseAuthorization();
 
 app.MapKitharaHealthEndpoints();
 app.MapAuthEndpoints();
+app.MapSearchEndpoints();
+app.MapStrunaEndpoints();
 app.MapModuleRegistry();
 
 app.Run();

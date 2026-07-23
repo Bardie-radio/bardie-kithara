@@ -1,8 +1,8 @@
 # ModuleChannel (mTLS + participant library)
 
-Kithara (and future external hosts) embed **`Bardie.ModuleChannel`** for module gRPC channel security. Modules (Bes, Magpie, …) embed the same package for **manifest identity**, Register/Heartbeat, and work-port TLS. Mesh join RPCs stay host-owned; **crypto, bootstrap policy, and static module identity live in the library** so embedders do not reinvent Kestrel/GrpcChannel wiring.
+Kithara (and future external hosts) embed **`Bardie.Module.Channel`** for module gRPC channel security. Modules (Bes, Magpie, …) embed the same package for **manifest identity**, Register/Heartbeat, and work-port TLS. Mesh join RPCs stay host-owned; **crypto, bootstrap policy, and static module identity live in the library** so embedders do not reinvent Kestrel/GrpcChannel wiring.
 
-**Library home:** [`libs/Bardie.ModuleChannel`](../../../libs/Bardie.ModuleChannel/README.md) · contracts: [`Bardie.Contracts`](../../../libs/Bardie.Contracts/README.md)
+**Library home:** [`libs/Bardie.Module.Channel`](../../../libs/Bardie.Module.Channel/README.md) · contracts: [`Bardie.Contracts`](../../../libs/Bardie.Contracts/README.md) · participant bootstrap: [`Bardie.Module.Hosting`](../../../libs/Bardie.Module.Hosting/README.md) · auth adapter kit: [`Bardie.Module.Auth`](../../../libs/Bardie.Module.Auth/README.md)
 
 ## Why it exists
 
@@ -13,13 +13,23 @@ Modules dial the host to `Register`, then speak mTLS for Heartbeat and work RPCs
 | Context | How modules reference libs |
 |---------|----------------------------|
 | Multi-root workspace / Local Compose sibling layout | If `../kithara/libs` exists → **`ProjectReference`** (Bes `Directory.Build.props`) |
-| Standalone CI / published consumers | **`PackageReference`** to versioned `Bardie.Contracts` + `Bardie.ModuleChannel` (`0.1.0`) |
+| Standalone CI / published consumers | **`PackageReference`** to versioned `Bardie.Contracts` + `Bardie.Module.Channel` (`0.1.0`); participants also take `Bardie.Module.Hosting` (+ `Bardie.Module.Auth` when minting JWTs) |
 
 Do **not** git-submodule Kithara, copy `.proto`/`.cs` into module repos, or path-include protos from another repo in a module csproj.
 
+## Participant hosting vs Channel
+
+| Package | Owns |
+|---------|------|
+| **`Bardie.Module.Channel`** | Manifest, Register/Heartbeat, certs, work-port Kestrel TLS, generic `MODULE_*` / `JOIN_SECRET` / `GRPC_ADVERTISE_ADDRESS` |
+| **`Bardie.Module.Hosting`** | ASP.NET Program bootstrap (`AddBardieModuleHosting`), `/healthz`, OTel from manifest, **Bardie Compose aliases** (`KITHARA_*` / `BARDIE_*`) |
+| **`Bardie.Module.Auth`** | Optional JWT mint / JWKS Register customizer / thin `AuthAdapterModuleBase` for adapters that mint login JWTs |
+
+Channel stays alias-agnostic so non-Bardie hosts can embed it without Compose name knowledge.
+
 ## Module manifest (static identity)
 
-Each module ships one **`module.manifest.json`**. ModuleChannel loads **generic** identity only — slug, kind, capabilities, display name, OTel name. It does **not** model Bardie auth/source/client Register bags.
+Each module ships one **`module.manifest.json`**. ModuleChannel loads **generic** identity only — slug, kind, capabilities, display name, OTel name. It does **not** type Bardie auth/source/client bags; those stay as opaque `Extensions` (or runtime-only customizer output such as JWKS).
 
 ```json
 {
@@ -27,7 +37,13 @@ Each module ships one **`module.manifest.json`**. ModuleChannel loads **generic*
   "kind": "auth",
   "displayName": "Bes",
   "otelServiceName": "bardie.auth.bes",
-  "capabilities": ["seedAdmin"]
+  "capabilities": ["seedAdmin"],
+  "auth": {
+    "formFields": [
+      { "name": "username", "label": "Username", "inputType": "text", "required": true },
+      { "name": "password", "label": "Password", "inputType": "password", "required": true }
+    ]
+  }
 }
 ```
 
@@ -35,7 +51,9 @@ Each module ships one **`module.manifest.json`**. ModuleChannel loads **generic*
 |-------|----------|--------|
 | `slug`, `kind`, `capabilities` | Manifest (ModuleChannel) | Defaults for core `RegisterRequest` fields |
 | `otelServiceName`, `displayName` | Manifest (ModuleChannel) | OTel / ops |
-| Kind-specific `oneof details` (JWKS, search fields, permission ceiling) | **Module / host customizer** | `IModuleRegisterRequestCustomizer` — not typed on the shared manifest |
+| `source.searchFields` | Manifest → `Bardie.Module.Source` customizer | Advertise on Register `details.source` |
+| `auth.formFields` | Manifest → module / `Bardie.Module.Auth` helper | `GetProviders` form schema (not Register) |
+| Kind-specific runtime `oneof` (JWKS, permission ceiling) | **Module / host customizer** | e.g. JWKS from key material — not a static file |
 | Extra JSON keys | Opaque `Extensions` | Preserved for module-local parsing; ModuleChannel ignores them |
 | Join secret | **Env only** | Never in the manifest file |
 | `grpc_advertise_address` | **Env / Compose** | Deployment-specific (`GRPC_ADVERTISE_ADDRESS`) |
@@ -45,12 +63,12 @@ Loader: `ModuleManifestLoader` + `BuildRegisterRequest(joinSecret, advertiseAddr
 
 ## Bardie capabilities vocabulary (host convention)
 
-Capabilities are **open strings** on the wire. ModuleChannel never interprets them. The tables below are **Bardie host** conventions (Kithara’s Auth Orchestrator gates RPCs on these values via `Bardie.Auth.Orchestrator.WellKnownAuthCapabilities` / host `WellKnownSourceCapabilities`) — documented here so module authors see the vocabulary next to Register.
+Capabilities are **open strings** on the wire. ModuleChannel never interprets them. The tables below are **Bardie host** conventions (Kithara’s Auth Orchestrator gates RPCs on these values via `Bardie.Orchestrator.Auth.WellKnownAuthCapabilities` / `Bardie.Orchestrator.Source.WellKnownSourceCapabilities`) — documented here so module authors see the vocabulary next to Register.
 
 | Put in `capabilities[]` | Keep elsewhere |
 |-------------------------|----------------|
 | Optional RPCs / behaviours that some modules of the same kind omit | `kind` (`source` / `auth` / `client`) |
-| Host routing gates (“may I call SeedAdmin / PauseTrack / Search fan-out?”) | Register `details.source.searchFields` (form schema) — set by module customizer |
+| Host routing gates (“may I call SeedAdmin / PauseTrack / Search fan-out?”) | Register `details.source.searchFields` — from manifest `source.searchFields` via module customizer |
 | | Register `details.auth` JWKS — runtime customizer |
 | | Register `details.client.authMode` + `permissionCeiling` — module customizer |
 
@@ -98,10 +116,10 @@ Env knobs: [configuration.md](configuration.md) (`BARDIE_MODULE_MTLS_BOOTSTRAP`,
 
 | Library (host) | Host (Kithara) | Library (participant) |
 |----------------|----------------|-------------------------|
-| Cert issue/validate, Kestrel helper, interceptor, outbound dial factory | Module Registry **service**, `BARDIE_JOIN_SECRETS`, port binding, catalog projection | Manifest load, Register→PEM persist, Heartbeat loop, work-port Kestrel with mesh CA trust |
+| Cert issue/validate, Kestrel helper, interceptor, outbound dial factory (`Bardie.Module.Channel`) | Module Registry **service**, `BARDIE_JOIN_SECRETS`, port binding, catalog projection | Channel: manifest, Register→PEM, Heartbeat, work-port TLS. Hosting: Program bootstrap + Compose env. Auth kit: JWT/JWKS when minting |
 
 ## Related
 
-- [grpc-module-registry.md](../interfaces/grpc-module-registry.md) · [grpc-auth-adapter.md](../interfaces/grpc-auth-adapter.md) · [security-audit-module-mesh.md](security-audit-module-mesh.md) · [configuration.md](configuration.md)
+- [grpc-module-registry.md](../interfaces/grpc-module-registry.md) · [grpc-auth-adapter.md](../interfaces/grpc-auth-adapter.md) · [security-audit](../mvp/security-audit.md) · [configuration.md](configuration.md) · [Module.Hosting README](../../../libs/Bardie.Module.Hosting/README.md) · [Module.Auth README](../../../libs/Bardie.Module.Auth/README.md)
 
 **Read next:** [grpc-module-registry.md](../interfaces/grpc-module-registry.md)

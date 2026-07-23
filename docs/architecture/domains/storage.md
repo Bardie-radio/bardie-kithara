@@ -58,8 +58,10 @@ Modules **dial Kithara** and put/get (stream) by storage key through a **thin st
 
 Docs lock **Kithara-configured shared backend + opaque keys + module→Kithara storage calls** — not per-module independent buckets or duplicated `BARDIE_STORAGE_*` on Magpie/Catbird, and not a new public path for raw library files.
 
-Exact streaming RPC shapes land with Phase 0 proto freeze.
+**Key layout (v0.1):** under the driver root, library blobs use **`tunes/<source_slug>/…`** (e.g. `tunes/magpie/<object-id>`). Keys stay opaque to callers; only the active driver maps key → path/object. Put may omit a key — Kithara assigns under that prefix using the caller’s module identity.
 
-**Related:** [library-and-tunes.md](library-and-tunes.md) · [ADR 006](../adrs/006-stream-source-tune-data-model.md) · [ADR 010](../adrs/010-blob-storage-backends.md) · [operations/deployment.md](../operations/deployment.md)
+RPC shapes: [grpc-blob-storage](../interfaces/grpc-blob-storage.md) (**v0.1 draft**).
+
+**Related:** [library-and-tunes.md](library-and-tunes.md) · [grpc-blob-storage](../interfaces/grpc-blob-storage.md) · [ADR 006](../adrs/006-stream-source-tune-data-model.md) · [ADR 010](../adrs/010-blob-storage-backends.md) · [operations/deployment.md](../operations/deployment.md)
 
 **Read next:** [library-and-tunes.md](library-and-tunes.md)

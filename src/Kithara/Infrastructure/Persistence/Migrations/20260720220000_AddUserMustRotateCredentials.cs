@@ -13,7 +13,6 @@ public partial class AddUserMustRotateCredentials : Migration
         migrationBuilder.AddColumn<bool>(
             name: "MustRotateCredentials",
             table: "users",
-            type: "INTEGER",
             nullable: false,
             defaultValue: false);
     }

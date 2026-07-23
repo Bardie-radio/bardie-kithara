@@ -15,12 +15,12 @@ namespace Kithara.Infrastructure.Persistence.Migrations
                 name: "users",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Kind = table.Column<int>(type: "INTEGER", nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    Status = table.Column<string>(type: "TEXT", maxLength: 32, nullable: false),
-                    ManagedByModuleSlug = table.Column<string>(type: "TEXT", maxLength: 64, nullable: true),
-                    GuestStrunaId = table.Column<Guid>(type: "TEXT", nullable: true)
+                    Id = table.Column<Guid>(nullable: false),
+                    Kind = table.Column<int>(nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(nullable: false),
+                    Status = table.Column<string>(maxLength: 32, nullable: false),
+                    ManagedByModuleSlug = table.Column<string>(maxLength: 64, nullable: true),
+                    GuestStrunaId = table.Column<Guid>(nullable: true)
                 },
                 constraints: table =>
                 {
@@ -31,13 +31,13 @@ namespace Kithara.Infrastructure.Persistence.Migrations
                 name: "search_result_cache",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    PrincipalUserId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    ModuleSlug = table.Column<string>(type: "TEXT", maxLength: 64, nullable: false),
-                    QueryKey = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
-                    ResultsJson = table.Column<string>(type: "TEXT", nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    ExpiresAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false)
+                    Id = table.Column<Guid>(nullable: false),
+                    PrincipalUserId = table.Column<Guid>(nullable: false),
+                    ModuleSlug = table.Column<string>(maxLength: 64, nullable: false),
+                    QueryKey = table.Column<string>(maxLength: 512, nullable: false),
+                    ResultsJson = table.Column<string>(nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(nullable: false),
+                    ExpiresAt = table.Column<DateTimeOffset>(nullable: false)
                 },
                 constraints: table =>
                 {
@@ -54,15 +54,15 @@ namespace Kithara.Infrastructure.Persistence.Migrations
                 name: "strunas",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Slug = table.Column<string>(type: "TEXT", maxLength: 64, nullable: false),
-                    Title = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false),
-                    PlaybackAccess = table.Column<int>(type: "INTEGER", nullable: false),
-                    ControlAccess = table.Column<int>(type: "INTEGER", nullable: false),
-                    OwnerUserId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    ListenToken = table.Column<string>(type: "TEXT", maxLength: 128, nullable: true),
-                    GuestCode = table.Column<string>(type: "TEXT", maxLength: 32, nullable: true),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false)
+                    Id = table.Column<Guid>(nullable: false),
+                    Slug = table.Column<string>(maxLength: 64, nullable: false),
+                    Title = table.Column<string>(maxLength: 256, nullable: false),
+                    PlaybackAccess = table.Column<int>(nullable: false),
+                    ControlAccess = table.Column<int>(nullable: false),
+                    OwnerUserId = table.Column<Guid>(nullable: false),
+                    ListenToken = table.Column<string>(maxLength: 128, nullable: true),
+                    GuestCode = table.Column<string>(maxLength: 32, nullable: true),
+                    CreatedAt = table.Column<DateTimeOffset>(nullable: false)
                 },
                 constraints: table =>
                 {
@@ -79,18 +79,18 @@ namespace Kithara.Infrastructure.Persistence.Migrations
                 name: "tunes",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    ModuleSlug = table.Column<string>(type: "TEXT", maxLength: 64, nullable: false),
-                    ExternalId = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
-                    Title = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true),
-                    Artist = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true),
-                    DurationSeconds = table.Column<double>(type: "REAL", nullable: true),
-                    ArtworkUrl = table.Column<string>(type: "TEXT", maxLength: 1024, nullable: true),
-                    StorageKey = table.Column<string>(type: "TEXT", maxLength: 512, nullable: true),
-                    ContentType = table.Column<string>(type: "TEXT", maxLength: 128, nullable: true),
-                    SizeBytes = table.Column<long>(type: "INTEGER", nullable: true),
-                    CreatedByUserId = table.Column<Guid>(type: "TEXT", nullable: true),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false)
+                    Id = table.Column<Guid>(nullable: false),
+                    ModuleSlug = table.Column<string>(maxLength: 64, nullable: false),
+                    ExternalId = table.Column<string>(maxLength: 512, nullable: false),
+                    Title = table.Column<string>(maxLength: 512, nullable: true),
+                    Artist = table.Column<string>(maxLength: 512, nullable: true),
+                    DurationSeconds = table.Column<double>(nullable: true),
+                    ArtworkUrl = table.Column<string>(maxLength: 1024, nullable: true),
+                    StorageKey = table.Column<string>(maxLength: 512, nullable: true),
+                    ContentType = table.Column<string>(maxLength: 128, nullable: true),
+                    SizeBytes = table.Column<long>(nullable: true),
+                    CreatedByUserId = table.Column<Guid>(nullable: true),
+                    CreatedAt = table.Column<DateTimeOffset>(nullable: false)
                 },
                 constraints: table =>
                 {
@@ -107,10 +107,10 @@ namespace Kithara.Infrastructure.Persistence.Migrations
                 name: "user_auth_bindings",
                 columns: table => new
                 {
-                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    ProviderSlug = table.Column<string>(type: "TEXT", maxLength: 64, nullable: false),
-                    ExternalSubject = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
-                    PayloadJson = table.Column<string>(type: "TEXT", nullable: false)
+                    UserId = table.Column<Guid>(nullable: false),
+                    ProviderSlug = table.Column<string>(maxLength: 64, nullable: false),
+                    ExternalSubject = table.Column<string>(maxLength: 256, nullable: true),
+                    PayloadJson = table.Column<string>(nullable: false)
                 },
                 constraints: table =>
                 {
@@ -127,8 +127,8 @@ namespace Kithara.Infrastructure.Persistence.Migrations
                 name: "struna_control_grants",
                 columns: table => new
                 {
-                    StrunaId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    UserId = table.Column<Guid>(type: "TEXT", nullable: false)
+                    StrunaId = table.Column<Guid>(nullable: false),
+                    UserId = table.Column<Guid>(nullable: false)
                 },
                 constraints: table =>
                 {
@@ -151,10 +151,10 @@ namespace Kithara.Infrastructure.Persistence.Migrations
                 name: "queue_entries",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    StrunaId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    TuneId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Position = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<Guid>(nullable: false),
+                    StrunaId = table.Column<Guid>(nullable: false),
+                    TuneId = table.Column<Guid>(nullable: false),
+                    Position = table.Column<int>(nullable: false)
                 },
                 constraints: table =>
                 {

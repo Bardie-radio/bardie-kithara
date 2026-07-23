@@ -54,7 +54,7 @@ How **Kithara** is structured inside one process. Ecosystem layout (Plume, modul
 
 ## Solution layout
 
-Root buckets: `src/` (host + DummyRegistrar), `libs/` (packable Contracts + ModuleChannel + orchestrators), `tests/`, `docs/`. Prefer **feature-first** folders and Minimal APIs ([aspnet team rules](../../../.cursor/rules/aspnet.mdc) in repo):
+Root buckets: `src/` (host + DummyRegistrar), `libs/` (packable Contracts + Module.* + Orchestrator.*), `tests/`, `docs/`. Prefer **feature-first** folders and Minimal APIs ([aspnet team rules](../../../.cursor/rules/aspnet.mdc) in repo):
 
 ```text
 src/Kithara/
@@ -71,10 +71,14 @@ src/Kithara/
     Neck/         # hosted FFmpeg supervisor + session FIFO + silence
     Storage/      # blob drivers (local MVP) — backing store for source orch storage API
 libs/
-  Bardie.Contracts/           # packable protos (ModuleRegistry, AuthAdapter)
-  Bardie.ModuleChannel/
-  Bardie.Auth.Orchestrator/
-  Bardie.Source.Orchestrator/
+  Bardie.Contracts/           # packable protos (ModuleRegistry, AuthAdapter, …)
+  Bardie.Module.Channel/      # mTLS + manifest + participant/host dial helpers
+  Bardie.Module.Hosting/      # ASP.NET participant bootstrap + Bardie Compose env aliases
+  Bardie.Module.Auth/         # JWT mint / JWKS Register helpers for auth adapters
+  Bardie.Module.Source/       # SourceModule base, FIFO sink, job registry, host dial clients
+  Bardie.Module.Source.Debug/ # opt-in sine FIFO/protocol smoke (Debug / test refs only)
+  Bardie.Orchestrator.Auth/
+  Bardie.Orchestrator.Source/
 ```
 
 FFmpeg child processes **outlive HTTP requests** — own them with a hosted background supervisor, not a request-scoped service alone.

@@ -156,6 +156,8 @@ Invariants (frozen for v0.1):
 | **Argus** | `redirect` (`authorize_url`) | Completes OIDC; **forwards** IdP JWTs | No (typical) |
 | **Hecate** | future ceremony `ui` case | Completes WebAuthn; **mints** JWT (+ refresh) | TBD |
 
-**Related:** [grpc-module-registry](grpc-module-registry.md) · [domains/auth-adapters.md](../domains/auth-adapters.md) · [interfaces/auth.md](auth.md) · [ADR 007](../adrs/007-auth-adapter-modules.md) · [Bardie.Contracts](../../../libs/Bardie.Contracts/README.md)
+JWT-minting adapters (Bes, typically Hecate) may embed packable **`Bardie.Module.Auth`** for mint/refresh/JWKS Register attach and a thin `AuthAdapterModuleBase` (`Health`, provider-id checks, default `SeedAdmin` → Unimplemented). Password/OIDC/passkey ceremony stays in the module. Participant Program bootstrap + Bardie Compose env aliases live in **`Bardie.Module.Hosting`**. Mesh mTLS stays in **`Bardie.Module.Channel`**.
+
+**Related:** [grpc-module-registry](grpc-module-registry.md) · [domains/auth-adapters.md](../domains/auth-adapters.md) · [interfaces/auth.md](auth.md) · [ADR 007](../adrs/007-auth-adapter-modules.md) · [Bardie.Contracts](../../../libs/Bardie.Contracts/README.md) · [Bardie.Module.Auth](../../../libs/Bardie.Module.Auth/README.md)
 
 **Read next:** [uri-routing.md](uri-routing.md)
