@@ -6,6 +6,7 @@ using Bardie.Orchestrator.Source.Ports;
 using Kithara.Infrastructure.Neck;
 using Kithara.Infrastructure.Persistence;
 using Kithara.Infrastructure.Storage;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;

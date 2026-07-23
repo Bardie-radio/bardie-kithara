@@ -54,6 +54,13 @@ public static class StrunaEndpoints
         dj.MapPost("/quickqueue", QuickQueueAsync);
         dj.MapDelete("/queue/{entryId:guid}", RemoveQueueEntryAsync);
 
+        // Owner-only grant CRUD (stricter than CanControl — grantees cannot grant others).
+        var grants = group.MapGroup("/{id:guid}/grants")
+            .AddEndpointFilter<StrunaOwnerFilter>();
+        grants.MapGet("/", ListGrantsAsync);
+        grants.MapPost("/", AddGrantAsync);
+        grants.MapDelete("/{userId:guid}", RemoveGrantAsync);
+
         return endpoints;
     }
 
@@ -78,6 +85,7 @@ public static class StrunaEndpoints
         [FromBody] CreateStrunaBody body,
         HttpContext http,
         Neck neck,
+        ManagedPermissionGate permissions,
         CancellationToken ct)
     {
         var principal = AuthPrincipal.Get(http);
@@ -86,6 +94,12 @@ public static class StrunaEndpoints
         if (string.Equals(principal.Kind, nameof(UserKind.EphemeralGuest), StringComparison.OrdinalIgnoreCase))
         {
             return Results.Forbid();
+        }
+
+        var ceilingDeny = permissions.DenyReason(principal, ManagedPermissions.CreateStruna);
+        if (ceilingDeny is not null)
+        {
+            return Results.Json(new { error = ceilingDeny }, statusCode: StatusCodes.Status403Forbidden);
         }
 
         var outcome = await neck.CreateStrunaAsync(
@@ -370,6 +384,65 @@ public static class StrunaEndpoints
         });
     }
 
+    private static async Task<IResult> ListGrantsAsync(Guid id, Neck neck, CancellationToken ct)
+    {
+        var grants = await neck.ListGrantsAsync(id, ct).ConfigureAwait(false);
+        return Results.Ok(new
+        {
+            grants = grants.Select(g => new { user_id = g.UserId }),
+        });
+    }
+
+    private static async Task<IResult> AddGrantAsync(
+        Guid id,
+        [FromBody] GrantBody body,
+        HttpContext http,
+        Neck neck,
+        ManagedPermissionGate permissions,
+        CancellationToken ct)
+    {
+        var principal = AuthPrincipal.Get(http);
+        var ceilingDeny = permissions.DenyReason(principal, ManagedPermissions.ManageGrants);
+        if (ceilingDeny is not null)
+        {
+            return Results.Json(new { error = ceilingDeny }, statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        if (!Guid.TryParse(body.UserId, out var userId))
+        {
+            return Results.BadRequest(new { error = "user_id is required." });
+        }
+
+        var (grant, error) = await neck.AddGrantAsync(id, userId, ct).ConfigureAwait(false);
+        return error switch
+        {
+            "not_found" => Results.NotFound(new { error = "not_found" }),
+            "user_not_found" => Results.NotFound(new { error = "user_not_found" }),
+            "owner_already_controls" => Results.BadRequest(new { error = "owner_already_controls" }),
+            "guest_not_grantable" => Results.BadRequest(new { error = "guest_not_grantable" }),
+            _ => Results.Ok(new { user_id = grant!.UserId }),
+        };
+    }
+
+    private static async Task<IResult> RemoveGrantAsync(
+        Guid id,
+        Guid userId,
+        HttpContext http,
+        Neck neck,
+        ManagedPermissionGate permissions,
+        CancellationToken ct)
+    {
+        var principal = AuthPrincipal.Get(http);
+        var ceilingDeny = permissions.DenyReason(principal, ManagedPermissions.ManageGrants);
+        if (ceilingDeny is not null)
+        {
+            return Results.Json(new { error = ceilingDeny }, statusCode: StatusCodes.Status403Forbidden);
+        }
+
+        var ok = await neck.RemoveGrantAsync(id, userId, ct).ConfigureAwait(false);
+        return ok ? Results.NoContent() : Results.NotFound(new { error = "not_found" });
+    }
+
     private static async Task<IResult> EnqueueTuneResultAsync(
         Neck neck,
         Guid strunaId,
@@ -584,5 +657,11 @@ public static class StrunaEndpoints
 
         [JsonPropertyName("code")]
         public string? Code { get; set; }
+    }
+
+    public sealed class GrantBody
+    {
+        [JsonPropertyName("user_id")]
+        public string? UserId { get; set; }
     }
 }
