@@ -72,9 +72,9 @@ flowchart TB
 | Layout  | Feature folders + packable Module.* / Orchestrator.* / Contracts libs | Fill remaining Streams/Listen behaviour     |
 | Models  | ADR 006 EF entities + migrations                                     | Full queue CRUD + guest ACL surface (6)     |
 | Auth    | Orch + Bes + JWT Bearer `/api/auth/*` + `seedAdmin` bootstrap        | Guest exchange REST (6); Plume login UI (7) |
-| Audio   | Session FIFO + Magpie PCM proof (in progress)                        | FFmpeg supervisor → Stream Server (4–5)     |
+| Audio   | Session FIFO + Magpie PCM (sine proof + YouTube path)                 | FFmpeg supervisor → Stream Server (4–5)     |
 | Control | Phase 6 REST (no FFmpeg): search, Struna CRUD, play/queue/skip/pause/guest | Encode-alive silence (4); ICY metadata sync (5) |
-| Modules | Registry + mTLS; Bes live; Magpie source RPCs (in progress)          | Plume REST (7)                              |
+| Modules | Registry + mTLS; Bes live; Magpie source RPCs live                   | Plume REST (7)                              |
 ## Phase map
 
 Phases are **dependency-ordered**. Later phases may start stubs earlier, but do not ship behaviour that bypasses an unfrozen contract.
@@ -251,17 +251,18 @@ libs/
 1. Registry dials module advertise address for `Search` / `StartTrack` / `StopTrack` / `TrackStatus` — **done** (`Bardie.Orchestrator.Source` real dials + capability gates).
 2. Temporary **dev harness**: create a session FIFO path, call Magpie `StartTrack`, verify PCM bytes appear (even before Stream Server) — REST create/play + Local `scripts/phase3-source-smoke.sh`.
 3. Storage interface MVP: local driver + opaque keys under `tunes/<source_slug>/…`; Magpie put/get via `BlobStorage` — **done**.
-4. Library write path: Magpie dials `Library.EnsureTune` after Put on cache miss (Kithara owns EF upsert) — **done** (host); Magpie consumer pending.
+4. Library write path: Magpie dials `Library.EnsureTune` after Put on cache miss (Kithara owns EF upsert) — **done**.
 5. **Phase 6 control REST (landed under Phase 3, no FFmpeg):** search + principal **search cache**; Struna create/get/delete; `/listen` + `/control` lists; play/quickplay/pause/skip/now-playing; queue/quickqueue; guest exchange. Session FIFO only — encode-alive is Phase 4.
-6. Shared source-module lib `Bardie.Module.Source` — **done** (Magpie scaffold consumes next).
+6. Shared source-module lib `Bardie.Module.Source` — **done**.
 
 
 
 ### Work (Magpie — parallel)
 
-1. Implement source contract: register, search (+ URL/id fallback), track jobs writing **s16le / 48 kHz / stereo** to `audio_endpoint`.
-2. Cache-first Tune resolve via storage contract (`tunes/magpie/…` keys).
-3. Honor `StopTrack` / `PauseTrack` / `ResumeTrack`; advertise `search` | `play` | `pause`.
+1. Implement source contract: register, search (+ URL/id fallback), track jobs writing **s16le / 48 kHz / stereo** to `audio_endpoint` — **done** (`src/Magpie`, `Bardie.Module.Source`).
+2. Cache-first Tune resolve via storage contract (`tunes/magpie/…` keys) — **done** (YoutubeExplode + FFmpeg.AutoGen; sine track for local proof).
+3. Honor `StopTrack` / `PauseTrack` / `ResumeTrack`; advertise `search` | `play` | `pause` — **done**.
+4. Local Compose: `local/compose.phase3.yml` + `scripts/phase3-source-smoke.sh` (`SEARCH_QUERY=sine`).
 
 
 

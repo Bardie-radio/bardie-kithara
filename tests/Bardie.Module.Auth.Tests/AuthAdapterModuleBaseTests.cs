@@ -38,6 +38,34 @@ public class AuthAdapterModuleBaseTests
     }
 
     [Fact]
+    public void AuthBag_builds_form_schema_from_manifest()
+    {
+        var manifest = ModuleManifestLoader.LoadFromJson("""
+            {
+              "slug": "bes",
+              "kind": "auth",
+              "capabilities": [],
+              "auth": {
+                "formFields": [
+                  { "name": "username", "label": "Username", "inputType": "text", "required": true },
+                  { "name": "password", "label": "Password", "inputType": "password", "required": true }
+                ]
+              }
+            }
+            """);
+
+        var schema = ModuleManifestAuthBag.TryBuildFormSchema(manifest);
+        Assert.NotNull(schema);
+        Assert.Equal(2, schema!.Fields.Count);
+        Assert.Equal("username", schema.Fields[0].Name);
+        Assert.Equal("text", schema.Fields[0].InputType);
+        Assert.True(schema.Fields[0].Required);
+        Assert.Equal("password", schema.Fields[1].Name);
+        Assert.Equal("password", schema.Fields[1].InputType);
+        Assert.True(schema.Fields[1].Required);
+    }
+
+    [Fact]
     public async Task SeedAdmin_default_is_unimplemented()
     {
         var adapter = new StubAdapter(new ModuleManifest { Slug = "bes", Kind = "auth" });

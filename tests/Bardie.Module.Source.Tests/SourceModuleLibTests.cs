@@ -62,6 +62,37 @@ public class SourceModuleLibTests
     }
 
     [Fact]
+    public void SearchFieldsCustomizer_prefers_manifest_over_options()
+    {
+        var manifest = ModuleManifestLoader.LoadFromJson("""
+            {
+              "slug": "magpie",
+              "kind": "source",
+              "capabilities": [],
+              "source": {
+                "searchFields": [
+                  { "name": "title", "required": true },
+                  { "name": "artist", "required": false }
+                ]
+              }
+            }
+            """);
+
+        var customizer = new SourceSearchFieldsRegisterRequestCustomizer(
+            Options.Create(new SourceModuleOptions
+            {
+                SearchFields = [new SourceSearchFieldOptions { Name = "owner", Required = false }],
+            }));
+        var request = new RegisterRequest();
+        customizer.Customize(request, manifest);
+
+        Assert.Equal(2, request.Source.SearchFields.Count);
+        Assert.Equal("title", request.Source.SearchFields[0].Name);
+        Assert.Equal("artist", request.Source.SearchFields[1].Name);
+        Assert.False(request.Source.SearchFields[1].Required);
+    }
+
+    [Fact]
     public void TrackJobRegistry_create_get_remove()
     {
         var registry = new TrackJobRegistry();

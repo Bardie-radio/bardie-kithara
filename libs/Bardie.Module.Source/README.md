@@ -10,13 +10,14 @@ Depends on [`Bardie.Contracts`](../Bardie.Contracts/README.md) + [`Bardie.Module
 
 ```csharp
 builder.Services.AddSourceModuleDefaults(builder.Configuration);
-// optional: SourceModule:SearchFields in appsettings / env
+// Prefer source.searchFields in module.manifest.json (optional SourceModule:SearchFields fallback)
 ```
 
 | Type | Role |
 |------|------|
 | `SourceModuleBase` | `Health`; default Pause/Resume gate on `pause` capability |
-| `SourceSearchFieldsRegisterRequestCustomizer` | Attach `Source.search_fields` on Register (`title` default) |
+| `ModuleManifestSourceBag` | Parse opaque `source.searchFields` from the manifest |
+| `SourceSearchFieldsRegisterRequestCustomizer` | Attach `Source.search_fields` on Register (manifest → options → `title`) |
 | `ITrackJobRegistry` / `TrackJobRegistry` | Job id lifecycle for Stop / Pause / Resume / TrackStatus |
 | `IFifoAudioSink` / `FifoAudioSink` | Write PCM to Kithara session FIFO path |
 | `IModuleBlobStorageClient` / `IModuleLibraryClient` | Dial Kithara BlobStorage + Library over participant mTLS |

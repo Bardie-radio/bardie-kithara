@@ -6,7 +6,7 @@ Env and Compose knobs for the **Kithara container** — database, collectors, mo
 
 | Variable | Description |
 |----------|-------------|
-| `DbProvider` | `sqlite` or `postgres` |
+| `DbProvider` | `sqlite` (throwaway local only) or `postgres` (Compose / real deploys) |
 | `DbConnectionString` | EF connection string |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | External collector URL (e.g. Alloy) |
 | `BARDIE_JOIN_SECRETS` | Map of module slug → secret (source, auth, and client modules — register + static admin). Treat as root credentials for mesh bootstrap — [security-audit-module-mesh](security-audit-module-mesh.md) |

@@ -12,13 +12,16 @@ public sealed class SourceSearchFieldOptions
     public bool Required { get; set; }
 }
 
-/// <summary>Options for <see cref="SourceSearchFieldsRegisterRequestCustomizer"/>.</summary>
+/// <summary>
+/// Optional override for <see cref="SourceSearchFieldsRegisterRequestCustomizer"/>.
+/// Prefer <c>source.searchFields</c> in <c>module.manifest.json</c>; this section is a fallback.
+/// </summary>
 public sealed class SourceModuleOptions
 {
     public const string SectionName = "SourceModule";
 
     /// <summary>
-    /// Fields advertised on Register. When empty, defaults to mandatory <c>title</c>.
+    /// Fields advertised on Register when the manifest has none. When empty, defaults to mandatory <c>title</c>.
     /// </summary>
     public List<SourceSearchFieldOptions> SearchFields { get; set; } = [];
 }
@@ -36,7 +39,12 @@ public sealed class SourceSearchFieldsRegisterRequestCustomizer : IModuleRegiste
     public void Customize(RegisterRequest request, ModuleManifest manifest)
     {
         var details = new SourceRegisterDetails();
-        var fields = _options.SearchFields;
+        var fields = ModuleManifestSourceBag.ReadSearchFields(manifest);
+        if (fields.Count == 0)
+        {
+            fields = _options.SearchFields;
+        }
+
         if (fields.Count == 0)
         {
             details.SearchFields.Add(new SearchFieldDescriptor { Name = "title", Required = true });

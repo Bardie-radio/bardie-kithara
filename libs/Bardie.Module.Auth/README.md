@@ -18,7 +18,8 @@ builder.Services.AddAuthModuleJwt(builder.Configuration);
 | `AuthModuleJwtOptions` / `AuthModuleJwtService` | Mint access+refresh, validate refresh, export JWKS |
 | `AuthJwksRegisterRequestCustomizer` | Attach JWKS on Module Registry Register |
 | `AuthAdapterModuleBase` | `Health`, provider-id match, `Denied()`, default `SeedAdmin` → Unimplemented |
+| `ModuleManifestAuthBag` | Parse opaque `auth.formFields` → `FormSchemaUi` for `GetProviders` |
 
-Password hashing, form schemas, and concrete `Authenticate` / `SeedAdmin` stay in the module.
+Password hashing and concrete `Authenticate` / `SeedAdmin` stay in the module. Prefer declaring login form fields in `module.manifest.json`.
 
 Pack: `dotnet pack libs/Bardie.Module.Auth/Bardie.Module.Auth.csproj -c Release`

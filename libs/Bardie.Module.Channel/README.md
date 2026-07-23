@@ -93,7 +93,7 @@ builder.WebHost.ConfigureKestrel(k =>
     k.ConfigureBardieModuleParticipantListeners(httpPort: 8080, workGrpcPort: 5001));
 ```
 
-Static identity in ModuleChannel is **generic** (`slug` / `kind` / `capabilities` / OTel name). Kind-specific Register bags stay in module customizers.
+Static identity in ModuleChannel is **generic** (`slug` / `kind` / `capabilities` / OTel name). Kind bags may ship as opaque JSON (`source.searchFields`, `auth.formFields`, …) in the same file; Module.Source / Module.Auth helpers parse them, and Register oneofs that need runtime material (JWKS) stay in customizers.
 
 ## Bootstrap modes (host)
 

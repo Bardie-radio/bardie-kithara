@@ -29,7 +29,7 @@ Channel stays alias-agnostic so non-Bardie hosts can embed it without Compose na
 
 ## Module manifest (static identity)
 
-Each module ships one **`module.manifest.json`**. ModuleChannel loads **generic** identity only — slug, kind, capabilities, display name, OTel name. It does **not** model Bardie auth/source/client Register bags.
+Each module ships one **`module.manifest.json`**. ModuleChannel loads **generic** identity only — slug, kind, capabilities, display name, OTel name. It does **not** type Bardie auth/source/client bags; those stay as opaque `Extensions` (or runtime-only customizer output such as JWKS).
 
 ```json
 {
@@ -37,7 +37,13 @@ Each module ships one **`module.manifest.json`**. ModuleChannel loads **generic*
   "kind": "auth",
   "displayName": "Bes",
   "otelServiceName": "bardie.auth.bes",
-  "capabilities": ["seedAdmin"]
+  "capabilities": ["seedAdmin"],
+  "auth": {
+    "formFields": [
+      { "name": "username", "label": "Username", "inputType": "text", "required": true },
+      { "name": "password", "label": "Password", "inputType": "password", "required": true }
+    ]
+  }
 }
 ```
 
@@ -45,7 +51,9 @@ Each module ships one **`module.manifest.json`**. ModuleChannel loads **generic*
 |-------|----------|--------|
 | `slug`, `kind`, `capabilities` | Manifest (ModuleChannel) | Defaults for core `RegisterRequest` fields |
 | `otelServiceName`, `displayName` | Manifest (ModuleChannel) | OTel / ops |
-| Kind-specific `oneof details` (JWKS, search fields, permission ceiling) | **Module / host customizer** | `IModuleRegisterRequestCustomizer` — not typed on the shared manifest |
+| `source.searchFields` | Manifest → `Bardie.Module.Source` customizer | Advertise on Register `details.source` |
+| `auth.formFields` | Manifest → module / `Bardie.Module.Auth` helper | `GetProviders` form schema (not Register) |
+| Kind-specific runtime `oneof` (JWKS, permission ceiling) | **Module / host customizer** | e.g. JWKS from key material — not a static file |
 | Extra JSON keys | Opaque `Extensions` | Preserved for module-local parsing; ModuleChannel ignores them |
 | Join secret | **Env only** | Never in the manifest file |
 | `grpc_advertise_address` | **Env / Compose** | Deployment-specific (`GRPC_ADVERTISE_ADDRESS`) |
@@ -60,7 +68,7 @@ Capabilities are **open strings** on the wire. ModuleChannel never interprets th
 | Put in `capabilities[]` | Keep elsewhere |
 |-------------------------|----------------|
 | Optional RPCs / behaviours that some modules of the same kind omit | `kind` (`source` / `auth` / `client`) |
-| Host routing gates (“may I call SeedAdmin / PauseTrack / Search fan-out?”) | Register `details.source.searchFields` (form schema) — set by module customizer |
+| Host routing gates (“may I call SeedAdmin / PauseTrack / Search fan-out?”) | Register `details.source.searchFields` — from manifest `source.searchFields` via module customizer |
 | | Register `details.auth` JWKS — runtime customizer |
 | | Register `details.client.authMode` + `permissionCeiling` — module customizer |
 

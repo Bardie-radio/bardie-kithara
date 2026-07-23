@@ -6,8 +6,8 @@ namespace Bardie.Module.Channel.Manifest;
 /// <summary>
 /// Static module identity shipped as <c>module.manifest.json</c>.
 /// Kind-specific Register oneof bags (auth JWKS, source search fields, client ceiling, …)
-/// are <b>not</b> modeled here — modules apply them via <see cref="Participant.IModuleRegisterRequestCustomizer"/>.
-/// Extra JSON properties are retained in <see cref="Extensions"/> for module-local parsing.
+/// are <b>not</b> typed here — modules apply them via <see cref="Participant.IModuleRegisterRequestCustomizer"/>
+/// and/or parse opaque bags in <see cref="Extensions"/> (e.g. <c>source.searchFields</c>, <c>auth.formFields</c>).
 /// </summary>
 public sealed class ModuleManifest
 {
