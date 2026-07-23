@@ -69,11 +69,11 @@ Deep-dive architecture for **Kithara** — the Bardie core backend. For ecosyste
 - [configuration](operations/configuration.md)
 - [module-channel](operations/module-channel.md)
 - [observability](operations/observability.md)
-- [security-audit-module-mesh](operations/security-audit-module-mesh.md)
 ### MVP
 - [v0.1-scope](mvp/v0.1-scope.md)
 - [v0.1-milestones](mvp/v0.1-milestones.md)
 - [implementation-plan](mvp/implementation-plan.md)
+- [security-audit](mvp/security-audit.md)
 
 ### Spike
 - [prototype-neck-ffmpeg](spike/prototype-neck-ffmpeg.md)

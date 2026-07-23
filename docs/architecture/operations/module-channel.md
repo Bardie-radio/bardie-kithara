@@ -120,6 +120,6 @@ Env knobs: [configuration.md](configuration.md) (`BARDIE_MODULE_MTLS_BOOTSTRAP`,
 
 ## Related
 
-- [grpc-module-registry.md](../interfaces/grpc-module-registry.md) · [grpc-auth-adapter.md](../interfaces/grpc-auth-adapter.md) · [security-audit-module-mesh.md](security-audit-module-mesh.md) · [configuration.md](configuration.md) · [Module.Hosting README](../../../libs/Bardie.Module.Hosting/README.md) · [Module.Auth README](../../../libs/Bardie.Module.Auth/README.md)
+- [grpc-module-registry.md](../interfaces/grpc-module-registry.md) · [grpc-auth-adapter.md](../interfaces/grpc-auth-adapter.md) · [security-audit](../mvp/security-audit.md) · [configuration.md](configuration.md) · [Module.Hosting README](../../../libs/Bardie.Module.Hosting/README.md) · [Module.Auth README](../../../libs/Bardie.Module.Auth/README.md)
 
 **Read next:** [grpc-module-registry.md](../interfaces/grpc-module-registry.md)

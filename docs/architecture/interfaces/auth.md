@@ -47,15 +47,15 @@ Redirect-style providers (Argus) set `ui.redirect.authorize_url`. The browser re
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/auth/authenticate` | Opaque payload → module `Authenticate` → if allowed, **module-issued (or forwarded) JWT** + refresh |
-| POST | `/api/auth/refresh` | Opaque refresh → module `Refresh` (e.g. Argus → IdP); returns new JWT + refresh |
+| POST | `/api/auth/refresh` | Opaque refresh → **module** `Refresh` **or** host guest remint (see below) |
 | GET/POST | `/api/auth/callback` | Browser return for redirect flows; same path as authenticate — **not** OIDC-named |
 
 Kithara does not mint login JWTs and does not interpret provider-specific crypto beyond verifying signatures with the module’s registered JWKS. It routes the bag, persists binding data when asked, and enforces Struna ACLs using claims/roles from the verified JWT (plus DB).
 
 - **Refresh (login):** entirely on the auth-module side.
-- **Refresh (ephemeral guest):** Kithara-local for that guest user until Struna teardown.
+- **Refresh (ephemeral guest — Phase 6 / SEC-01):** host path on the same `POST /api/auth/refresh`. Detect Kithara guest (e.g. `bardie_provider=kithara.guest`), validate + remint until Struna teardown / capped lifetime — do **not** dial an auth adapter.
 - Revoke / logout: module- and IdP-dependent for login users; guests die with the Struna. Rotating the guest code **does not** kill existing guests — it only blocks new exchanges.
-- **`must_rotate_credentials`:** seeded admins must change creds on first login; optional force-rotate for any durable user later.
+- **`must_rotate_credentials`:** seeded admins must change creds on first login; optional force-rotate for any durable user later (Phase 6 / SEC-03).
 
 ## Bootstrap admin (`seedAdmin`)
 
@@ -114,9 +114,9 @@ See [clients](../domains/clients.md).
 
 **Ownership:** stored on the Struna model (`OwnerUserId` or equivalent) at create time = creator.
 
-**Private control:** owner **plus** explicit grants to other durable/managed users (owner manages the grant list). Ephemeral guests are not on that list — they use the protected guest-code path instead.
+**Private control:** owner **plus** explicit grants to other durable/managed users. **Phase 6:** owner-only CRUD under `/api/streams/{id}/grants` (persist `StrunaControlGrant`). Ephemeral guests are not on that list — they use the protected guest-code path instead.
 
-**Static module ceiling:** declared at Module Registry handshake. When the static UI creates a managed user it may narrow scope; it **cannot** raise rights above the advertised ceiling. If it sets nothing, Kithara applies the advertised defaults.
+**Static module ceiling (Phase 6 enforce):** declared at Module Registry handshake and stored as `permission_ceiling` for managed users. Create-struna and grant mutations for managed principals must stay ≤ ceiling (deny above). When the static UI creates a managed user it may narrow scope; it **cannot** raise rights above the advertised ceiling. If it sets nothing, Kithara applies the advertised defaults. User-aware clients are unconstrained by ceiling.
 
 ## Permission matrix (summary)
 
