@@ -75,7 +75,7 @@ public sealed class SourceModuleOrchestrator
         {
             try
             {
-                using var channel = CreateModuleChannel(module.GrpcAdvertiseAddress);
+                using var channel = CreateModuleChannel(module.GrpcAdvertiseAddress, module.Slug);
                 var client = new SourceModule.SourceModuleClient(channel);
                 var request = new SearchRequest { Limit = limit };
                 foreach (var (key, value) in fields)
@@ -139,7 +139,7 @@ public sealed class SourceModuleOrchestrator
 
         try
         {
-            using var channel = CreateModuleChannel(module!.GrpcAdvertiseAddress);
+            using var channel = CreateModuleChannel(module!.GrpcAdvertiseAddress, module.Slug);
             var client = new SourceModule.SourceModuleClient(channel);
             var response = await client.StartTrackAsync(
                     new StartTrackRequest
@@ -229,7 +229,7 @@ public sealed class SourceModuleOrchestrator
             yield break;
         }
 
-        using var channel = CreateModuleChannel(module!.GrpcAdvertiseAddress);
+        using var channel = CreateModuleChannel(module!.GrpcAdvertiseAddress, module.Slug);
         var client = new SourceModule.SourceModuleClient(channel);
         using var call = client.TrackStatus(
             new TrackStatusRequest { TrackJobId = trackJobId },
@@ -272,7 +272,7 @@ public sealed class SourceModuleOrchestrator
 
         try
         {
-            using var channel = CreateModuleChannel(module!.GrpcAdvertiseAddress);
+            using var channel = CreateModuleChannel(module!.GrpcAdvertiseAddress, module.Slug);
             var client = new SourceModule.SourceModuleClient(channel);
             var ok = await invoke(client, trackJobId, cancellationToken).ConfigureAwait(false);
             return new TrackControlResult(ok, ok ? null : "Module rejected the control request.");
@@ -352,7 +352,7 @@ public sealed class SourceModuleOrchestrator
             .ToArray();
     }
 
-    private Grpc.Net.Client.GrpcChannel CreateModuleChannel(string advertiseAddress)
+    private Grpc.Net.Client.GrpcChannel CreateModuleChannel(string advertiseAddress, string moduleSlug)
     {
         var address = ModuleParticipantServiceCollectionExtensions.NormalizeGrpcAddress(advertiseAddress);
         if (!_certificateStore.IsLoaded)
@@ -360,11 +360,13 @@ public sealed class SourceModuleOrchestrator
             throw new InvalidOperationException("Host TLS material is not loaded.");
         }
 
+        // SEC-06: pin work-port server cert CN/SAN to the registered module slug.
         return _channelFactory.CreateChannel(
             address,
             _certificateStore.OpenOutboundClientIdentity(),
-            trustRemoteServerCertificate: true,
-            ownsClientCertificate: true);
+            trustRemoteServerCertificate: false,
+            ownsClientCertificate: true,
+            expectedServerIdentity: moduleSlug);
     }
 
     private static Func<SourceModuleRegistration, bool> HasCapability(string capability) =>

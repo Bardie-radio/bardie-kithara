@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Bardie.Orchestrator.Source;
+using Bardie.Source.V1;
 using Kithara.Infrastructure.Persistence;
 using Kithara.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -9,8 +11,8 @@ using Microsoft.Extensions.Options;
 namespace Kithara.Infrastructure.Neck;
 
 /// <summary>
-/// Stream lifecycle (Neck): alive Strunas, session FIFOs, and source track-job control.
-/// FFmpeg / silence feeder land in Phase 4 on this type.
+/// Stream lifecycle (Neck): alive Strunas, session FIFOs, encode supervisor, source track jobs,
+/// TrackStatus → now-playing / queue advance.
 /// </summary>
 public sealed class Neck
 {
@@ -20,18 +22,23 @@ public sealed class Neck
     private readonly string _fifoRoot;
     private readonly IDbContextFactory<KitharaDbContext> _dbFactory;
     private readonly SourceModuleOrchestrator _orch;
+    private readonly StrunaEncoderSupervisor _encoder;
     private readonly ConcurrentDictionary<Guid, ActiveTrackJob> _jobs = new();
+    private readonly ConcurrentDictionary<Guid, NowPlayingSnapshot> _nowPlaying = new();
+    private readonly ConcurrentDictionary<Guid, CancellationTokenSource> _statusWatchers = new();
     private readonly ILogger<Neck> _logger;
 
     public Neck(
         IOptions<NeckOptions> options,
         IDbContextFactory<KitharaDbContext> dbFactory,
         SourceModuleOrchestrator orch,
+        StrunaEncoderSupervisor encoder,
         ILogger<Neck> logger)
     {
         ArgumentNullException.ThrowIfNull(options);
         _dbFactory = dbFactory ?? throw new ArgumentNullException(nameof(dbFactory));
         _orch = orch ?? throw new ArgumentNullException(nameof(orch));
+        _encoder = encoder ?? throw new ArgumentNullException(nameof(encoder));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         var path = options.Value.StrunaFifoRoot;
@@ -70,8 +77,23 @@ public sealed class Neck
             .ConfigureAwait(false);
     }
 
+    public async Task<Struna?> GetStrunaBySlugAsync(string slug, CancellationToken cancellationToken = default)
+    {
+        var normalized = NormalizeSlug(slug);
+        if (normalized is null)
+        {
+            return null;
+        }
+
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        return await db.Strunas.AsNoTracking()
+            .Include(s => s.ControlGrants)
+            .FirstOrDefaultAsync(s => s.Slug == normalized, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     /// <summary>
-    /// Creates an alive Struna: persist row + session FIFO (FFmpeg/silence in Phase 4).
+    /// Creates an encode-alive Struna: persist row + session FIFO + silence + FFmpeg.
     /// </summary>
     public async Task<CreateStrunaOutcome> CreateStrunaAsync(
         Guid ownerUserId,
@@ -116,12 +138,29 @@ public sealed class Neck
             return new CreateStrunaOutcome(null, CreateStrunaError.SlugConflict);
         }
 
-        await EnsureStrunaFifoAsync(struna.Id, cancellationToken).ConfigureAwait(false);
+        using var activity = NeckActivity.Source.StartActivity("neck.struna.create");
+        activity?.SetTag("struna.id", struna.Id.ToString("D"));
+        activity?.SetTag("struna.slug", struna.Slug);
+
+        var fifo = await EnsureStrunaFifoAsync(struna.Id, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _encoder.StartAsync(struna.Id, struna.Slug, fifo, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to start encoder for Struna {Id}; rolling back", struna.Id);
+            await RemoveStrunaFifoAsync(struna.Id, cancellationToken).ConfigureAwait(false);
+            db.Strunas.Remove(struna);
+            await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            throw;
+        }
+
         return new CreateStrunaOutcome(struna, null);
     }
 
     /// <summary>
-    /// Tears down a Struna: StopTrack if any, remove FIFO, destroy ephemeral guests, free slug.
+    /// Tears down a Struna: StopTrack → silence/FFmpeg stop → remove FIFO → destroy guests → free slug.
     /// Returns destroyed guest user ids so Search can clear their result <b>cache</b> (not search history).
     /// </summary>
     public async Task<DeleteStrunaOutcome> DeleteStrunaAsync(
@@ -136,7 +175,13 @@ public sealed class Neck
             return new DeleteStrunaOutcome(false, []);
         }
 
+        using var activity = NeckActivity.Source.StartActivity("neck.struna.delete");
+        activity?.SetTag("struna.id", id.ToString("D"));
+        activity?.SetTag("struna.slug", struna.Slug);
+
         await StopCurrentTrackAsync(id, cancellationToken).ConfigureAwait(false);
+        ClearNowPlaying(id);
+        await _encoder.StopAsync(id, cancellationToken).ConfigureAwait(false);
         await RemoveStrunaFifoAsync(id, cancellationToken).ConfigureAwait(false);
 
         var guests = await db.Users
@@ -155,8 +200,8 @@ public sealed class Neck
     }
 
     /// <summary>
-    /// Starts (or replaces) a track job. Empty module/trackRef resumes via source <c>ResumeTrack</c>
-    /// (Phase 4 silence feeder will own true unpause). Cache miss / download is the source module's job.
+    /// Starts (or replaces) a track job. Empty module/trackRef = unpause: silence off + ResumeTrack.
+    /// Encoder stays up across play / skip.
     /// </summary>
     public async Task<PlayTrackOutcome> PlayTrackAsync(
         Guid strunaId,
@@ -172,25 +217,12 @@ public sealed class Neck
 
         if (string.IsNullOrWhiteSpace(moduleSlug) || string.IsNullOrWhiteSpace(trackRef))
         {
-            if (!_jobs.TryGetValue(strunaId, out var existing))
-            {
-                return new PlayTrackOutcome(false, null, PlayTrackError.NothingToResume, null);
-            }
-
-            var resume = await _orch.ResumeTrackAsync(
-                    existing.ModuleSlug,
-                    existing.TrackJobId,
-                    cancellationToken)
-                .ConfigureAwait(false);
-            if (resume.Ok)
-            {
-                return new PlayTrackOutcome(true, existing.TrackJobId, null, null);
-            }
-
-            return new PlayTrackOutcome(false, null, PlayTrackError.ModuleFailed, resume.FailureReason);
+            return await UnpauseAsync(strunaId, cancellationToken).ConfigureAwait(false);
         }
 
         await StopCurrentTrackAsync(strunaId, cancellationToken).ConfigureAwait(false);
+        // Keep encoder; silence fills the gap until the module writer attaches.
+        _encoder.SetSilence(strunaId, true);
 
         var fifo = await EnsureStrunaFifoAsync(strunaId, cancellationToken).ConfigureAwait(false);
         var start = await _orch.StartTrackAsync(
@@ -210,12 +242,23 @@ public sealed class Neck
                 start.FailureReason ?? "start_track_failed");
         }
 
-        _jobs[strunaId] = new ActiveTrackJob(start.ModuleSlug!, start.TrackJobId, trackRef.Trim());
+        var job = new ActiveTrackJob(start.ModuleSlug!, start.TrackJobId, trackRef.Trim());
+        _jobs[strunaId] = job;
+        SetNowPlaying(strunaId, new NowPlayingSnapshot(
+            job.ModuleSlug,
+            job.TrackRef,
+            job.TrackJobId,
+            Title: null,
+            Artist: null,
+            Paused: false));
+        // Module owns PCM; silence off so Magpie bytes are not interleaved with zeros.
+        _encoder.SetSilence(strunaId, false);
+        StartStatusWatcher(strunaId, job);
         return new PlayTrackOutcome(true, start.TrackJobId, null, null);
     }
 
     /// <summary>
-    /// Pauses the current source track job. True silence feeder (FFmpeg keeps humming) is Phase 4.
+    /// Pause: silence on + optional module <c>PauseTrack</c> when the source advertises pause.
     /// </summary>
     public async Task<PlayTrackOutcome> PauseTrackAsync(
         Guid strunaId,
@@ -223,51 +266,64 @@ public sealed class Neck
     {
         if (!_jobs.TryGetValue(strunaId, out var job))
         {
+            // Still feed silence so FFmpeg keeps humming for an idle Struna.
+            _encoder.SetSilence(strunaId, true);
             return new PlayTrackOutcome(false, null, PlayTrackError.NothingToResume, "no_active_track");
         }
+
+        _encoder.SetSilence(strunaId, true);
 
         var pause = await _orch.PauseTrackAsync(job.ModuleSlug, job.TrackJobId, cancellationToken)
             .ConfigureAwait(false);
         if (!pause.Ok)
         {
-            return new PlayTrackOutcome(false, job.TrackJobId, PlayTrackError.ModuleFailed, pause.FailureReason);
+            // Module may lack pause — silence still holds the encoder (plan: optional PauseTrack).
+            _logger.LogInformation(
+                "PauseTrack unavailable or failed for Struna {Id}: {Reason}; silence feeder active",
+                strunaId,
+                pause.FailureReason);
+        }
+
+        if (_nowPlaying.TryGetValue(strunaId, out var snap))
+        {
+            SetNowPlaying(strunaId, snap with { Paused = true });
         }
 
         return new PlayTrackOutcome(true, job.TrackJobId, null, null);
     }
 
-    /// <summary>Stop current job and start the next queue entry, if any.</summary>
+    /// <summary>Stop current job and start the next queue entry, if any. Never restarts FFmpeg.</summary>
     public async Task<PlayTrackOutcome> SkipAsync(Guid strunaId, CancellationToken cancellationToken = default)
     {
         await StopCurrentTrackAsync(strunaId, cancellationToken).ConfigureAwait(false);
+        _encoder.SetSilence(strunaId, true);
 
-        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
-        var next = await db.QueueEntries
-            .Include(e => e.Tune)
-            .Where(e => e.StrunaId == strunaId)
-            .OrderBy(e => e.Position)
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        if (next is null)
-        {
-            return new PlayTrackOutcome(true, null, null, null);
-        }
-
-        db.QueueEntries.Remove(next);
-        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-        var trackRef = string.IsNullOrWhiteSpace(next.Tune.ExternalId)
-            ? next.Tune.Id.ToString("D")
-            : next.Tune.ExternalId;
-        return await PlayTrackAsync(strunaId, next.Tune.ModuleSlug, trackRef, cancellationToken)
-            .ConfigureAwait(false);
+        return await AdvanceQueueHeadAsync(strunaId, cancellationToken).ConfigureAwait(false);
     }
 
-    public NowPlayingInfo? GetNowPlaying(Guid strunaId) =>
-        _jobs.TryGetValue(strunaId, out var job)
-            ? new NowPlayingInfo(job.ModuleSlug, job.TrackRef, job.TrackJobId)
+    public NowPlayingInfo? GetNowPlaying(Guid strunaId)
+    {
+        if (_nowPlaying.TryGetValue(strunaId, out var snap))
+        {
+            return snap.ToInfo();
+        }
+
+        return _jobs.TryGetValue(strunaId, out var job)
+            ? new NowPlayingInfo(job.ModuleSlug, job.TrackRef, job.TrackJobId, null, null, false)
             : null;
+    }
+
+    /// <summary>ICY <c>StreamTitle</c> text from the Neck snapshot (same source as REST now-playing).</summary>
+    public string GetStreamTitle(Guid strunaId)
+    {
+        var now = GetNowPlaying(strunaId);
+        if (now is null || now.Paused)
+        {
+            return string.Empty;
+        }
+
+        return now.StreamTitle;
+    }
 
     public async Task<IReadOnlyList<QueueEntry>> ListQueueAsync(
         Guid strunaId,
@@ -336,8 +392,305 @@ public sealed class Neck
         return true;
     }
 
+    public async Task<IReadOnlyList<StrunaControlGrant>> ListGrantsAsync(
+        Guid strunaId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        return await db.StrunaControlGrants.AsNoTracking()
+            .Where(g => g.StrunaId == strunaId)
+            .OrderBy(g => g.UserId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<(StrunaControlGrant? Grant, string? Error)> AddGrantAsync(
+        Guid strunaId,
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var struna = await db.Strunas.FirstOrDefaultAsync(s => s.Id == strunaId, cancellationToken)
+            .ConfigureAwait(false);
+        if (struna is null)
+        {
+            return (null, "not_found");
+        }
+
+        if (struna.OwnerUserId == userId)
+        {
+            return (null, "owner_already_controls");
+        }
+
+        var user = await db.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken)
+            .ConfigureAwait(false);
+        if (user is null)
+        {
+            return (null, "user_not_found");
+        }
+
+        if (user.Kind == UserKind.EphemeralGuest)
+        {
+            return (null, "guest_not_grantable");
+        }
+
+        var existing = await db.StrunaControlGrants
+            .FirstOrDefaultAsync(g => g.StrunaId == strunaId && g.UserId == userId, cancellationToken)
+            .ConfigureAwait(false);
+        if (existing is not null)
+        {
+            return (existing, null);
+        }
+
+        var grant = new StrunaControlGrant { StrunaId = strunaId, UserId = userId };
+        db.StrunaControlGrants.Add(grant);
+        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return (grant, null);
+    }
+
+    public async Task<bool> RemoveGrantAsync(
+        Guid strunaId,
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var grant = await db.StrunaControlGrants
+            .FirstOrDefaultAsync(g => g.StrunaId == strunaId && g.UserId == userId, cancellationToken)
+            .ConfigureAwait(false);
+        if (grant is null)
+        {
+            return false;
+        }
+
+        db.StrunaControlGrants.Remove(grant);
+        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return true;
+    }
+
     public bool TryGetActiveTrack(Guid strunaId, out ActiveTrackJob? job) =>
         _jobs.TryGetValue(strunaId, out job);
+
+    private async Task<PlayTrackOutcome> UnpauseAsync(Guid strunaId, CancellationToken cancellationToken)
+    {
+        if (!_jobs.TryGetValue(strunaId, out var existing))
+        {
+            return new PlayTrackOutcome(false, null, PlayTrackError.NothingToResume, null);
+        }
+
+        _encoder.SetSilence(strunaId, false);
+
+        var resume = await _orch.ResumeTrackAsync(
+                existing.ModuleSlug,
+                existing.TrackJobId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (!resume.Ok)
+        {
+            _logger.LogInformation(
+                "ResumeTrack unavailable or failed for Struna {Id}: {Reason}; silence off for module writer",
+                strunaId,
+                resume.FailureReason);
+        }
+
+        if (_nowPlaying.TryGetValue(strunaId, out var snap))
+        {
+            SetNowPlaying(strunaId, snap with { Paused = false });
+        }
+
+        return new PlayTrackOutcome(true, existing.TrackJobId, null, null);
+    }
+
+    private async Task<PlayTrackOutcome> AdvanceQueueHeadAsync(
+        Guid strunaId,
+        CancellationToken cancellationToken)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+        var next = await db.QueueEntries
+            .Include(e => e.Tune)
+            .Where(e => e.StrunaId == strunaId)
+            .OrderBy(e => e.Position)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (next is null)
+        {
+            ClearNowPlaying(strunaId);
+            return new PlayTrackOutcome(true, null, null, null);
+        }
+
+        db.QueueEntries.Remove(next);
+        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        var trackRef = string.IsNullOrWhiteSpace(next.Tune.ExternalId)
+            ? next.Tune.Id.ToString("D")
+            : next.Tune.ExternalId;
+        var outcome = await PlayTrackAsync(strunaId, next.Tune.ModuleSlug, trackRef, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (outcome.Ok
+            && (!string.IsNullOrWhiteSpace(next.Tune.Title) || !string.IsNullOrWhiteSpace(next.Tune.Artist)))
+        {
+            if (_nowPlaying.TryGetValue(strunaId, out var snap))
+            {
+                SetNowPlaying(
+                    strunaId,
+                    snap with { Title = next.Tune.Title, Artist = next.Tune.Artist });
+            }
+        }
+
+        return outcome;
+    }
+
+    private void StartStatusWatcher(Guid strunaId, ActiveTrackJob job)
+    {
+        StopStatusWatcher(strunaId);
+        var cts = new CancellationTokenSource();
+        _statusWatchers[strunaId] = cts;
+        _ = Task.Run(() => WatchTrackStatusAsync(strunaId, job, cts.Token), CancellationToken.None);
+    }
+
+    private void StopStatusWatcher(Guid strunaId)
+    {
+        if (_statusWatchers.TryRemove(strunaId, out var cts))
+        {
+            try
+            {
+                cts.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Already disposed.
+            }
+
+            cts.Dispose();
+        }
+    }
+
+    private async Task WatchTrackStatusAsync(
+        Guid strunaId,
+        ActiveTrackJob job,
+        CancellationToken cancellationToken)
+    {
+        CancellationTokenSource? ownedCts = null;
+        try
+        {
+            await foreach (var evt in _orch.TrackStatusAsync(job.ModuleSlug, job.TrackJobId, cancellationToken)
+                               .ConfigureAwait(false))
+            {
+                if (!_jobs.TryGetValue(strunaId, out var current)
+                    || !string.Equals(current.TrackJobId, job.TrackJobId, StringComparison.Ordinal))
+                {
+                    break;
+                }
+
+                if (!string.IsNullOrWhiteSpace(evt.Title) || !string.IsNullOrWhiteSpace(evt.Artist))
+                {
+                    var prev = _nowPlaying.TryGetValue(strunaId, out var snap)
+                        ? snap
+                        : new NowPlayingSnapshot(
+                            job.ModuleSlug,
+                            job.TrackRef,
+                            job.TrackJobId,
+                            null,
+                            null,
+                            false);
+                    SetNowPlaying(
+                        strunaId,
+                        prev with
+                        {
+                            Title = string.IsNullOrWhiteSpace(evt.Title) ? prev.Title : evt.Title,
+                            Artist = string.IsNullOrWhiteSpace(evt.Artist) ? prev.Artist : evt.Artist,
+                            Paused = evt.State == TrackState.Paused,
+                        });
+                }
+                else if (evt.State == TrackState.Paused
+                         && _nowPlaying.TryGetValue(strunaId, out var pausedSnap))
+                {
+                    SetNowPlaying(strunaId, pausedSnap with { Paused = true });
+                }
+                else if (evt.State == TrackState.Running
+                         && _nowPlaying.TryGetValue(strunaId, out var runSnap))
+                {
+                    SetNowPlaying(strunaId, runSnap with { Paused = false });
+                }
+
+                if (evt.State is TrackState.Ended or TrackState.Error)
+                {
+                    if (evt.State == TrackState.Error)
+                    {
+                        _logger.LogWarning(
+                            "Track job {JobId} on Struna {Id} errored: {Error}",
+                            job.TrackJobId,
+                            strunaId,
+                            evt.ErrorMessage);
+                    }
+
+                    // DES-02: clear job + advance queue; encoder stays up.
+                    if (_jobs.TryGetValue(strunaId, out var still)
+                        && string.Equals(still.TrackJobId, job.TrackJobId, StringComparison.Ordinal))
+                    {
+                        _jobs.TryRemove(strunaId, out _);
+                        // Detach before AdvanceQueueHead starts a new watcher for the next track.
+                        if (_statusWatchers.TryRemove(strunaId, out var removed))
+                        {
+                            if (removed.Token.Equals(cancellationToken))
+                            {
+                                ownedCts = removed;
+                            }
+                            else
+                            {
+                                removed.Cancel();
+                                removed.Dispose();
+                            }
+                        }
+
+                        _encoder.SetSilence(strunaId, true);
+                        try
+                        {
+                            await AdvanceQueueHeadAsync(strunaId, CancellationToken.None)
+                                .ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "Queue advance failed after track end on Struna {Id}", strunaId);
+                            ClearNowPlaying(strunaId);
+                        }
+                    }
+
+                    break;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Watcher cancelled (stop / delete / replace).
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "TrackStatus watcher ended for Struna {Id} job {JobId}",
+                strunaId,
+                job.TrackJobId);
+        }
+        finally
+        {
+            ownedCts?.Dispose();
+        }
+    }
+
+    private void SetNowPlaying(Guid strunaId, NowPlayingSnapshot snapshot)
+    {
+        _nowPlaying[strunaId] = snapshot;
+        _encoder.SetStreamTitle(strunaId, snapshot.ToInfo().StreamTitle);
+    }
+
+    private void ClearNowPlaying(Guid strunaId)
+    {
+        _nowPlaying.TryRemove(strunaId, out _);
+        _encoder.SetStreamTitle(strunaId, string.Empty);
+    }
 
     private static string CreateSecret(int length)
     {
@@ -397,6 +750,7 @@ public sealed class Neck
 
     private async Task StopCurrentTrackAsync(Guid strunaId, CancellationToken cancellationToken)
     {
+        StopStatusWatcher(strunaId);
         if (!_jobs.TryRemove(strunaId, out var job))
         {
             return;
@@ -469,7 +823,52 @@ public sealed class Neck
 
 public sealed record ActiveTrackJob(string ModuleSlug, string TrackJobId, string TrackRef);
 
-public sealed record NowPlayingInfo(string ModuleSlug, string TrackRef, string TrackJobId);
+public sealed record NowPlayingSnapshot(
+    string ModuleSlug,
+    string TrackRef,
+    string TrackJobId,
+    string? Title,
+    string? Artist,
+    bool Paused)
+{
+    public NowPlayingInfo ToInfo() =>
+        new(ModuleSlug, TrackRef, TrackJobId, Title, Artist, Paused);
+}
+
+public sealed record NowPlayingInfo(
+    string ModuleSlug,
+    string TrackRef,
+    string TrackJobId,
+    string? Title,
+    string? Artist,
+    bool Paused)
+{
+    /// <summary>ICY / REST display title: <c>Artist - Title</c> or trackRef fallback.</summary>
+    public string StreamTitle
+    {
+        get
+        {
+            var hasArtist = !string.IsNullOrWhiteSpace(Artist);
+            var hasTitle = !string.IsNullOrWhiteSpace(Title);
+            if (hasArtist && hasTitle)
+            {
+                return $"{Artist!.Trim()} - {Title!.Trim()}";
+            }
+
+            if (hasTitle)
+            {
+                return Title!.Trim();
+            }
+
+            if (hasArtist)
+            {
+                return Artist!.Trim();
+            }
+
+            return TrackRef;
+        }
+    }
+}
 
 public enum CreateStrunaError
 {

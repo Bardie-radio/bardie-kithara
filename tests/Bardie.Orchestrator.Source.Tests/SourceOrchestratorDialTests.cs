@@ -183,7 +183,8 @@ public class SourceOrchestratorDialTests
             string address,
             System.Security.Cryptography.X509Certificates.X509Certificate2? clientCertificate = null,
             bool trustRemoteServerCertificate = false,
-            bool ownsClientCertificate = false) =>
+            bool ownsClientCertificate = false,
+            string? expectedServerIdentity = null) =>
             throw new InvalidOperationException("Dial not expected in capability-gate unit tests.");
     }
 
